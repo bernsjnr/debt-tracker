@@ -102,7 +102,11 @@
   .alloc-amt-input::-webkit-inner-spin-button, .alloc-amt-input::-webkit-outer-spin-button { display: none; }
   .alloc-amt-input:focus { border-bottom-color: #666; }
 
-  .alloc-track-wrap { position: relative; height: 28px; display: flex; align-items: center; cursor: pointer; user-select: none; touch-action: none; margin-bottom: 6px; }
+  .alloc-lock-btn { background: transparent; border: none; cursor: pointer; padding: 4px; color: #444; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: color 0.15s, background 0.15s; }
+  .alloc-lock-btn:hover { color: #888; background: #2a2a2a; }
+  .alloc-lock-btn.locked { color: #e0a030; }
+  .alloc-track-wrap.locked { opacity: 0.5; pointer-events: none; }
+  .alloc-amt-input.locked { opacity: 0.5; pointer-events: none; }
   .alloc-track-bg { position: absolute; left: 11px; right: 11px; height: 6px; background: #2e2e2e; border-radius: 3px; }
   .alloc-track-min-fill { position: absolute; left: 11px; height: 6px; border-radius: 3px 0 0 3px; opacity: 0.45; }
   .alloc-track-extra-fill { position: absolute; height: 6px; border-radius: 0 3px 3px 0; }
@@ -283,6 +287,7 @@ function save(d){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(d));}catch(
 let data=load();
 let strat='avalanche';
 let monthlyBudget=500;
+let locks=CARD_DEFS.map(()=>false);
 
 function totalMin(){return data.cards.reduce((s,c)=>s+c.minPayment,0);}
 function extraAboveMin(){return Math.max(0,monthlyBudget-totalMin());}
@@ -490,6 +495,11 @@ function renderAllocator(){
     const extraAmt=alloc-card.minPayment;
     const displayPct=Math.round(pct*10)/10;
 
+    const isLocked=locks[i];
+    const lockIcon=isLocked
+      ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`
+      : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>`;
+
     const icon=`<svg viewBox="0 0 24 24" fill="none" stroke="${def.color}" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`;
 
     const slot=document.createElement('div');
@@ -503,21 +513,23 @@ function renderAllocator(){
             <div class="alloc-slot-sub">${card.apr}% APR · min ${fmt(card.minPayment)}/mo</div>
           </div>
         </div>
-        <div class="alloc-slot-right">
-          <span class="alloc-slot-pct" style="color:${def.color}">${displayPct}%</span>
-          <input class="alloc-amt-input" id="aamt-${i}" type="number" value="${alloc}" min="${card.minPayment}" max="${monthlyBudget}" step="1" style="color:${def.color}" onkeydown="if(event.key==='Enter')this.blur()">
+        <div class="alloc-slot-right" style="gap:8px;align-items:center">
+          <button class="alloc-lock-btn ${isLocked?'locked':''}" onclick="toggleLock(${i})" title="${isLocked?'Unlock':'Lock'} this card">${lockIcon}</button>
+          <span class="alloc-slot-pct" style="color:${isLocked?'#666':def.color}">${displayPct}%</span>
+          <input class="alloc-amt-input ${isLocked?'locked':''}" id="aamt-${i}" type="number" value="${alloc}" min="${card.minPayment}" max="${monthlyBudget}" step="1" style="color:${isLocked?'#555':def.color}" ${isLocked?'disabled':''} onkeydown="if(event.key==='Enter')this.blur()">
         </div>
       </div>
-      <div class="alloc-track-wrap" id="atrack-${i}">
+      <div class="alloc-track-wrap ${isLocked?'locked':''}" id="atrack-${i}">
         <div class="alloc-track-bg"></div>
-        <div class="alloc-track-min-fill" style="width:calc(${minPct}% * (100% - 22px) / 100% + 2px);background:${def.color}"></div>
-        <div class="alloc-track-extra-fill" style="left:calc(${minPct}% * (100% - 22px) / 100% + 11px + 2px);width:calc(${Math.max(0,pct-minPct)}% * (100% - 22px) / 100%);background:${def.color}"></div>
+        <div class="alloc-track-min-fill" style="width:calc(${minPct}% * (100% - 22px) / 100% + 2px);background:${isLocked?'#555':def.color}"></div>
+        <div class="alloc-track-extra-fill" style="left:calc(${minPct}% * (100% - 22px) / 100% + 11px + 2px);width:calc(${Math.max(0,pct-minPct)}% * (100% - 22px) / 100%);background:${isLocked?'#555':def.color}"></div>
         <div class="alloc-track-min-marker" style="left:calc(${minPct}% * (100% - 22px) / 100% + 11px)"></div>
-        <div class="alloc-thumb" id="athumb-${i}" style="left:calc(${pct}% * (100% - 22px) / 100% + 11px);background:${def.color}"></div>
+        <div class="alloc-thumb" id="athumb-${i}" style="left:calc(${pct}% * (100% - 22px) / 100% + 11px);background:${isLocked?'#555':def.color}"></div>
       </div>
       <div class="alloc-track-legend">
-        <div class="atl"><div class="atl-dot" style="background:${def.color};opacity:0.45"></div>Minimum ${fmt(card.minPayment)}</div>
-        ${extraAmt>0?`<div class="atl"><div class="atl-dot" style="background:${def.color}"></div>Extra +${fmt(extraAmt)}</div>`:'<div class="atl" style="color:#444">No extra payment</div>'}
+        <div class="atl"><div class="atl-dot" style="background:${isLocked?'#555':def.color};opacity:0.45"></div>Minimum ${fmt(card.minPayment)}</div>
+        ${extraAmt>0?`<div class="atl"><div class="atl-dot" style="background:${isLocked?'#555':def.color}"></div>Extra +${fmt(extraAmt)}</div>`:'<div class="atl" style="color:#444">No extra payment</div>'}
+        ${isLocked?'<div class="atl" style="color:#e0a030;margin-left:auto"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle;margin-right:3px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Locked</div>':''}
       </div>
       <div class="alloc-slot-stats">
         <div class="ast"><div class="ast-label">Minimum</div><div class="ast-val" style="color:${def.color};opacity:0.7">${fmt(card.minPayment)}/mo</div></div>
@@ -532,6 +544,11 @@ function renderAllocator(){
   wireBudgetInput(document.getElementById('budget-input'));
 }
 
+function toggleLock(idx){
+  locks[idx]=!locks[idx];
+  renderAllocator();
+}
+
 function setupDrag(idx, trackWrap, thumb, amtInput){
   function clientXToAlloc(clientX){
     const rect=trackWrap.getBoundingClientRect();
@@ -542,26 +559,28 @@ function setupDrag(idx, trackWrap, thumb, amtInput){
   }
 
   function applyAndRedistribute(newVal){
+    if(locks[idx])return;
     const oldVal=allocs[idx];
     const diff=newVal-oldVal;
     if(diff===0)return;
+    const unlocked=data.cards.map((_,j)=>j).filter(j=>j!==idx&&!locks[j]);
+    if(unlocked.length===0){allocs[idx]=oldVal;return;}
     allocs[idx]=newVal;
-    const others=data.cards.map((_,j)=>j).filter(j=>j!==idx);
-    const prevTotal=others.reduce((s,j)=>s+allocs[j],0);
-    const newOtherTotal=monthlyBudget-newVal;
-    if(newOtherTotal<others.reduce((s,j)=>s+data.cards[j].minPayment,0)){
-      allocs[idx]=oldVal;return;
-    }
+    const prevTotal=unlocked.reduce((s,j)=>s+allocs[j],0);
+    const lockedTotal=data.cards.reduce((s,c,j)=>j!==idx&&locks[j]?s+allocs[j]:s,0);
+    const newOtherTotal=monthlyBudget-newVal-lockedTotal;
+    const minOtherTotal=unlocked.reduce((s,j)=>s+data.cards[j].minPayment,0);
+    if(newOtherTotal<minOtherTotal){allocs[idx]=oldVal;return;}
     if(prevTotal>0){
-      others.forEach(j=>{
+      unlocked.forEach(j=>{
         allocs[j]=Math.max(data.cards[j].minPayment,Math.round(allocs[j]/prevTotal*newOtherTotal));
       });
     } else {
-      const share=Math.floor(newOtherTotal/others.length);
-      others.forEach(j=>{allocs[j]=Math.max(data.cards[j].minPayment,share);});
+      const share=Math.floor(newOtherTotal/unlocked.length);
+      unlocked.forEach(j=>{allocs[j]=Math.max(data.cards[j].minPayment,share);});
     }
     const remainder=monthlyBudget-allocs.reduce((s,a)=>s+a,0);
-    if(remainder!==0){const adj=others.find(j=>allocs[j]+remainder>=data.cards[j].minPayment);if(adj!==undefined)allocs[adj]+=remainder;}
+    if(remainder!==0){const adj=unlocked.find(j=>allocs[j]+remainder>=data.cards[j].minPayment);if(adj!==undefined)allocs[adj]+=remainder;}
     renderAllocator();
   }
 
