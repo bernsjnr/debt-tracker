@@ -297,10 +297,25 @@ function applyBudget(raw){
   const parsed=parseFloat(raw);
   if(isNaN(parsed)||parsed<=0)return;
   const tMin=totalMin();
-  monthlyBudget=Math.max(tMin,parsed);
-  const scale=monthlyBudget/Math.max(1,allocs.reduce((s,a)=>s+a,0));
-  allocs=allocs.map((a,i)=>Math.max(data.cards[i].minPayment,Math.round(a*scale)));
-  forceFullAllocation();
+  const newBudget=Math.max(tMin,parsed);
+  const oldBudget=monthlyBudget;
+  monthlyBudget=newBudget;
+
+  if(newBudget<=tMin){
+    allocs=data.cards.map(c=>c.minPayment);
+  } else {
+    const oldExtra=Math.max(0,oldBudget-tMin);
+    const newExtra=newBudget-tMin;
+    if(oldExtra>0){
+      const ratios=allocs.map((a,i)=>(a-data.cards[i].minPayment)/oldExtra);
+      allocs=data.cards.map((c,i)=>c.minPayment+Math.round(ratios[i]*newExtra));
+    } else {
+      const perCard=Math.floor(newExtra/data.cards.length);
+      allocs=data.cards.map(c=>c.minPayment+perCard);
+    }
+    forceFullAllocation();
+  }
+
   syncBudgetInputs();
   renderAllocator();
   renderPayoff();
@@ -502,6 +517,7 @@ function renderAllocator(){
     slotsEl.appendChild(slot);
     setupDrag(i, slot.querySelector('#atrack-'+i), slot.querySelector('#athumb-'+i));
   });
+  wireBudgetInput(document.getElementById('budget-input'));
 }
 
 function setupDrag(idx, trackWrap, thumb){
@@ -675,7 +691,7 @@ function switchTab(name,btn){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   btn.classList.add('active');document.getElementById('section-'+name).classList.add('active');
-  if(name==='allocator'){renderAllocator();syncBudgetInputs();wireBudgetInput(document.getElementById('budget-input'));}
+  if(name==='allocator'){renderAllocator();syncBudgetInputs();}
   if(name==='payoff'){renderPayoff();syncBudgetInputs();}
   if(name==='history')renderHistory();
 }
