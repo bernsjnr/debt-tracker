@@ -214,10 +214,13 @@
 
   <div id="section-payoff" class="section">
     <div class="scenario-controls">
-      <div class="ctrl-label">Extra monthly payment on top of minimums</div>
+      <div class="ctrl-label">Monthly debt budget — shared with allocator</div>
       <div class="ctrl-row">
-        <input type="range" min="0" max="800" step="10" value="200" id="extra-slider" style="flex:1;min-width:120px" oninput="onSlider(this.value)">
-        <div class="extra-display" id="extra-disp">£200</div>
+        <div style="display:flex;align-items:baseline;gap:4px;flex:1">
+          <span style="font-size:18px;color:var(--text2)">£</span>
+          <input type="number" id="payoff-budget-input" min="0" step="10" style="font-size:22px;font-weight:500;width:120px;border:none;background:transparent;color:var(--text);font-family:inherit;outline:none" oninput="onSharedBudget(this.value)">
+        </div>
+        <div style="font-size:12px;color:var(--text2);white-space:nowrap" id="payoff-budget-sub"></div>
         <div class="strat-pills">
           <button class="strat-pill on" onclick="setStrat('avalanche',this)">Avalanche</button>
           <button class="strat-pill" onclick="setStrat('snowball',this)">Snowball</button>
@@ -271,9 +274,34 @@ function load(){try{const s=localStorage.getItem(STORAGE_KEY);return s?JSON.pars
 function save(d){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(d));}catch(e){}}
 
 let data=load();
-let strat='avalanche',extra=200;
-let allocBudget=500;
-let allocs=(()=>{const tMin=CARD_DEFS.reduce((s,c)=>s+c.minPayment,0);const ex=Math.max(0,500-tMin);const per=Math.floor(ex/CARD_DEFS.length);const a=CARD_DEFS.map(c=>c.minPayment+per);a[0]+=500-a.reduce((s,v)=>s+v,0);return a;})();
+let strat='avalanche';
+let monthlyBudget=500;
+
+function totalMin(){return data.cards.reduce((s,c)=>s+c.minPayment,0);}
+function extraAboveMin(){return Math.max(0,monthlyBudget-totalMin());}
+
+function syncBudgetInputs(){
+  const bi=document.getElementById('budget-input');
+  const pi=document.getElementById('payoff-budget-input');
+  const sub=document.getElementById('payoff-budget-sub');
+  if(bi)bi.value=monthlyBudget;
+  if(pi)pi.value=monthlyBudget;
+  const ex=extraAboveMin();
+  const tMin=totalMin();
+  if(sub)sub.textContent=fmt(tMin)+' minimums + '+fmt(ex)+' extra';
+}
+
+function onSharedBudget(v){
+  const parsed=parseFloat(v)||0;
+  monthlyBudget=Math.max(totalMin(),parsed);
+  const scale=monthlyBudget/Math.max(1,allocs.reduce((s,a)=>s+a,0));
+  allocs=allocs.map((a,i)=>Math.max(data.cards[i].minPayment,Math.round(a*scale)));
+  forceFullAllocation();
+  syncBudgetInputs();
+  renderAllocator();
+  renderPayoff();
+}
+let allocs=(()=>{const tMin=CARD_DEFS.reduce((s,c)=>s+c.minPayment,0);const ex=Math.max(0,monthlyBudget-tMin);const per=Math.floor(ex/CARD_DEFS.length);const a=CARD_DEFS.map(c=>c.minPayment+per);a[0]+=monthlyBudget-a.reduce((s,v)=>s+v,0);return a;})();
 
 function fmt(n){return'£'+Math.abs(n).toLocaleString('en-GB',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function fmtD(n){return'£'+Math.abs(n).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -351,12 +379,12 @@ function totalMin(){return data.cards.reduce((s,c)=>s+c.minPayment,0);}
 
 function forceFullAllocation(){
   const tMin=totalMin();
-  if(allocBudget<tMin){allocs=data.cards.map(c=>c.minPayment);return;}
+  if(monthlyBudget<tMin){allocs=data.cards.map(c=>c.minPayment);return;}
   let total=allocs.reduce((s,a)=>s+a,0);
-  const diff=allocBudget-total;
+  const diff=monthlyBudget-total;
   if(Math.abs(diff)>0){allocs[0]=Math.max(data.cards[0].minPayment,allocs[0]+diff);}
   total=allocs.reduce((s,a)=>s+a,0);
-  if(total!==allocBudget){const rem=allocBudget-total;allocs[0]+=rem;}
+  if(total!==monthlyBudget){const rem=monthlyBudget-total;allocs[0]+=rem;}
 }
 
 function renderAllocator(){
@@ -364,7 +392,7 @@ function renderAllocator(){
   forceFullAllocation();
   const totalAlloc=allocs.reduce((s,a)=>s+a,0);
   const maxM=Math.max(...data.cards.map((c,i)=>mthsToPayoff(c.balance,c.apr,allocs[i])));
-  const totalPct=Math.round(allocs.reduce((s,a)=>s+a/allocBudget*100,0));
+  const totalPct=Math.round(allocs.reduce((s,a)=>s+a/monthlyBudget*100,0));
 
   outer.innerHTML=`
     <div class="alloc-top">
@@ -372,7 +400,7 @@ function renderAllocator(){
         <div class="alloc-budget-label">Monthly debt budget</div>
         <div class="alloc-budget-wrap">
           <span class="alloc-budget-sym">£</span>
-          <input class="alloc-budget-input" type="number" id="budget-input" value="${allocBudget}" min="0" step="10" oninput="onBudgetInput(this.value)">
+          <input class="alloc-budget-input" type="number" id="budget-input" value="${monthlyBudget}" min="0" step="10" oninput="onBudgetInput(this.value)">
         </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
@@ -395,8 +423,8 @@ function renderAllocator(){
   data.cards.forEach((card,i)=>{
     const def=CARD_DEFS[i];
     const alloc=allocs[i];
-    const pct=allocBudget>0?alloc/allocBudget*100:0;
-    const minPct=allocBudget>0?card.minPayment/allocBudget*100:0;
+    const pct=monthlyBudget>0?alloc/monthlyBudget*100:0;
+    const minPct=monthlyBudget>0?card.minPayment/monthlyBudget*100:0;
     const months=mthsToPayoff(card.balance,card.apr,alloc);
     const intPd=intTotal(card.balance,card.apr,alloc);
     const extraAmt=alloc-card.minPayment;
@@ -443,8 +471,8 @@ function setupDrag(idx, trackWrap, thumb){
     const rect=trackWrap.getBoundingClientRect();
     const usable=rect.width-22;
     const x=Math.max(0,Math.min(usable,clientX-rect.left-11));
-    const raw=Math.round(x/usable*allocBudget);
-    return Math.max(data.cards[idx].minPayment,Math.min(allocBudget,raw));
+    const raw=Math.round(x/usable*monthlyBudget);
+    return Math.max(data.cards[idx].minPayment,Math.min(monthlyBudget,raw));
   }
 
   function applyAndRedistribute(newVal){
@@ -454,7 +482,7 @@ function setupDrag(idx, trackWrap, thumb){
     allocs[idx]=newVal;
     const others=data.cards.map((_,j)=>j).filter(j=>j!==idx);
     const prevTotal=others.reduce((s,j)=>s+allocs[j],0);
-    const newOtherTotal=allocBudget-newVal;
+    const newOtherTotal=monthlyBudget-newVal;
     if(newOtherTotal<others.reduce((s,j)=>s+data.cards[j].minPayment,0)){
       allocs[idx]=oldVal;return;
     }
@@ -466,7 +494,7 @@ function setupDrag(idx, trackWrap, thumb){
       const share=Math.floor(newOtherTotal/others.length);
       others.forEach(j=>{allocs[j]=Math.max(data.cards[j].minPayment,share);});
     }
-    const remainder=allocBudget-allocs.reduce((s,a)=>s+a,0);
+    const remainder=monthlyBudget-allocs.reduce((s,a)=>s+a,0);
     if(remainder!==0){const adj=others.find(j=>allocs[j]+remainder>=data.cards[j].minPayment);if(adj!==undefined)allocs[adj]+=remainder;}
     renderAllocator();
   }
@@ -486,28 +514,33 @@ function setupDrag(idx, trackWrap, thumb){
 }
 
 function onBudgetInput(v){
-  allocBudget=Math.max(totalMin(),parseFloat(v)||0);
-  const scale=allocBudget/Math.max(1,allocs.reduce((s,a)=>s+a,0));
+  monthlyBudget=Math.max(totalMin(),parseFloat(v)||0);
+  const scale=monthlyBudget/Math.max(1,allocs.reduce((s,a)=>s+a,0));
   allocs=allocs.map((a,i)=>Math.max(data.cards[i].minPayment,Math.round(a*scale)));
   forceFullAllocation();
+  syncBudgetInputs();
   renderAllocator();
+  renderPayoff();
 }
 
 function setMinsOnly(){
-  allocBudget=totalMin();
+  monthlyBudget=totalMin();
   allocs=data.cards.map(c=>c.minPayment);
-  document.querySelector('.alloc-budget-input').value=allocBudget;
+  syncBudgetInputs();
   renderAllocator();
+  renderPayoff();
 }
 
 function resetEqual(){
   const tMin=totalMin();
-  const ex=Math.max(0,allocBudget-tMin);
+  const ex=Math.max(0,monthlyBudget-tMin);
   const perCard=Math.floor(ex/data.cards.length);
   allocs=data.cards.map(c=>c.minPayment+perCard);
-  const leftover=allocBudget-allocs.reduce((s,a)=>s+a,0);
+  const leftover=monthlyBudget-allocs.reduce((s,a)=>s+a,0);
   if(leftover!==0)allocs[0]+=leftover;
+  syncBudgetInputs();
   renderAllocator();
+  renderPayoff();
 }
 
 /* ── Payoff ── */
@@ -539,14 +572,14 @@ function simulate(extraAmt,strategy){
 }
 
 function renderPayoff(){
-  const res=simulate(extra,strat),resMin=simulate(0,strat);
+  const res=simulate(extraAboveMin(),strat),resMin=simulate(0,strat);
   const yrs=Math.floor(res.months/12),mos=res.months%12;
   const yrsMin=Math.floor(resMin.months/12),mosMin=resMin.months%12;
   const saved=resMin.totalInt-res.totalInt,monthsSaved=resMin.months-res.months;
   document.getElementById('headline-grid').innerHTML=`
     <div class="hl-card"><div class="hl-label">Debt free</div><div class="hl-val good">${yrs>0?yrs+'y ':''} ${mos}m</div><div class="hl-sub">${monthsSaved>0?monthsSaved+' months sooner':'at minimum payments'}</div></div>
     <div class="hl-card"><div class="hl-label">Total interest</div><div class="hl-val bad">${fmt(res.totalInt)}</div><div class="hl-sub">${saved>0?'saving '+fmt(saved):''}</div></div>
-    <div class="hl-card"><div class="hl-label">Monthly outgoing</div><div class="hl-val warn">${fmt(res.budget)}</div><div class="hl-sub">${fmt(res.totalMin)} mins + £${extra} extra</div></div>`;
+    <div class="hl-card"><div class="hl-label">Monthly outgoing</div><div class="hl-val warn">${fmt(res.budget)}</div><div class="hl-sub">${fmt(res.totalMin)} mins + ${fmt(extraAboveMin())} extra</div></div>`;
   const COLS=[{color:'#c0392b',fill:'#fce8e8',text:'#a32d2d'},{color:'#b8860b',fill:'#faeeda',text:'#854f0b'},{color:'#1a7a4a',fill:'#eaf3de',text:'#3b6d11'}];
   let html='';
   res.phases.forEach((phase,i)=>{
@@ -558,7 +591,7 @@ function renderPayoff(){
     const pct=Math.round(phase.duration/res.months*100);
     const isLast=i===res.phases.length-1;
     const nextCard=!isLast?res.phases[i+1].card:null;
-    const extraLine=extra>0?`Extra <strong>£${extra}/month</strong> fires at <strong>${c.name} (${c.apr}% APR)</strong> — your highest-rate debt`:`No extra payment this phase — minimums only`;
+    const extraLine=extraAboveMin()>0?`Extra <strong>${fmt(extraAboveMin())}/month</strong> fires at <strong>${c.name} (${c.apr}% APR)</strong> — your highest-rate debt`:`No extra payment this phase — minimums only`;
     const freedLine=!isLast?`When cleared, its <strong>£${fmt(c.minPayment)}/month</strong> minimum rolls into <strong>${nextCard.name}</strong> for phase ${i+2}`:`Final phase — freed minimums plus your extra all combine to finish it`;
     html+=`<div class="phase"><div class="phase-accent" style="background:${col.color}"></div>
       <div class="phase-head">
@@ -584,14 +617,13 @@ function renderPayoff(){
   document.getElementById('phases').innerHTML=html;
   document.getElementById('vs-banner').innerHTML=`
     <div class="vs-grid">
-      <div class="vs-col"><div class="vs-label">With £${extra} extra</div><div class="vs-val" style="color:var(--ok)">${yrs>0?yrs+'y ':''} ${mos}m</div><div class="vs-sub">${fmt(res.totalInt)} interest</div></div>
+      <div class="vs-col"><div class="vs-label">With ${fmt(extraAboveMin())} extra</div><div class="vs-val" style="color:var(--ok)">${yrs>0?yrs+'y ':''} ${mos}m</div><div class="vs-sub">${fmt(res.totalInt)} interest</div></div>
       <div class="vs-divider">vs</div>
       <div class="vs-col"><div class="vs-label">Minimums only</div><div class="vs-val" style="color:var(--danger)">${yrsMin>0?yrsMin+'y ':''} ${mosMin}m</div><div class="vs-sub">${fmt(resMin.totalInt)} interest</div></div>
     </div>
-    <div class="vs-save">The extra <strong>£${extra}/month</strong> saves you <strong style="color:var(--ok)">${fmt(saved)}</strong> in interest and clears everything <strong style="color:var(--ok)">${monthsSaved} months sooner</strong></div>`;
+    <div class="vs-save">The extra <strong>${fmt(extraAboveMin())}/month</strong> saves you <strong style="color:var(--ok)">${fmt(saved)}</strong> in interest and clears everything <strong style="color:var(--ok)">${monthsSaved} months sooner</strong></div>`;
 }
 
-function onSlider(v){extra=parseInt(v);document.getElementById('extra-disp').textContent='£'+extra;renderPayoff();}
 function setStrat(s,btn){strat=s;document.querySelectorAll('.strat-pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderPayoff();}
 
 /* ── History ── */
@@ -634,8 +666,8 @@ function switchTab(name,btn){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   btn.classList.add('active');document.getElementById('section-'+name).classList.add('active');
-  if(name==='allocator')renderAllocator();
-  if(name==='payoff')renderPayoff();
+  if(name==='allocator'){renderAllocator();syncBudgetInputs();}
+  if(name==='payoff'){renderPayoff();syncBudgetInputs();}
   if(name==='history')renderHistory();
 }
 
