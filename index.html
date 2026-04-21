@@ -99,12 +99,16 @@
   .alloc-slot-pct { font-size: 20px; font-weight: 500; }
   .alloc-slot-amt { font-size: 14px; color: #666; }
 
-  .alloc-track-wrap { position: relative; height: 28px; display: flex; align-items: center; cursor: pointer; user-select: none; touch-action: none; margin-bottom: 10px; }
+  .alloc-track-wrap { position: relative; height: 28px; display: flex; align-items: center; cursor: pointer; user-select: none; touch-action: none; margin-bottom: 6px; }
   .alloc-track-bg { position: absolute; left: 11px; right: 11px; height: 6px; background: #2e2e2e; border-radius: 3px; }
-  .alloc-track-fill { position: absolute; left: 11px; height: 6px; border-radius: 3px; }
-  .alloc-track-min-marker { position: absolute; width: 2px; height: 12px; background: rgba(255,255,255,0.12); transform: translateX(-1px); }
+  .alloc-track-min-fill { position: absolute; left: 11px; height: 6px; border-radius: 3px 0 0 3px; opacity: 0.45; }
+  .alloc-track-extra-fill { position: absolute; height: 6px; border-radius: 0 3px 3px 0; }
+  .alloc-track-min-marker { position: absolute; width: 2px; height: 16px; background: rgba(255,255,255,0.25); transform: translateX(-1px); z-index: 1; }
   .alloc-thumb { position: absolute; width: 26px; height: 26px; border-radius: 50%; transform: translateX(-50%); cursor: grab; touch-action: none; border: 3px solid #1c1c1c; z-index: 2; }
   .alloc-thumb:active { cursor: grabbing; transform: translateX(-50%) scale(1.1); }
+  .alloc-track-legend { display: flex; gap: 12px; margin-bottom: 10px; }
+  .atl { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #555; }
+  .atl-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
 
   .alloc-slot-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-bottom: 14px; }
   .ast { background: #242424; border-radius: 7px; padding: 6px 8px; }
@@ -503,14 +507,19 @@ function renderAllocator(){
       </div>
       <div class="alloc-track-wrap" id="atrack-${i}">
         <div class="alloc-track-bg"></div>
-        <div class="alloc-track-fill" id="afill-${i}" style="width:calc(${pct}% * (100% - 22px) / 100% + 13px);left:11px;background:${def.trackColor}"></div>
+        <div class="alloc-track-min-fill" style="width:calc(${minPct}% * (100% - 22px) / 100% + 2px);background:${def.color}"></div>
+        <div class="alloc-track-extra-fill" style="left:calc(${minPct}% * (100% - 22px) / 100% + 11px + 2px);width:calc(${Math.max(0,pct-minPct)}% * (100% - 22px) / 100%);background:${def.color}"></div>
         <div class="alloc-track-min-marker" style="left:calc(${minPct}% * (100% - 22px) / 100% + 11px)"></div>
         <div class="alloc-thumb" id="athumb-${i}" style="left:calc(${pct}% * (100% - 22px) / 100% + 11px);background:${def.color}"></div>
       </div>
+      <div class="alloc-track-legend">
+        <div class="atl"><div class="atl-dot" style="background:${def.color};opacity:0.45"></div>Minimum ${fmt(card.minPayment)}</div>
+        ${extraAmt>0?`<div class="atl"><div class="atl-dot" style="background:${def.color}"></div>Extra +${fmt(extraAmt)}</div>`:'<div class="atl" style="color:#444">No extra payment</div>'}
+      </div>
       <div class="alloc-slot-stats">
-        <div class="ast"><div class="ast-label">Extra this card</div><div class="ast-val" style="color:${extraAmt>0?def.color:'#555'}">${extraAmt>0?'+'+fmt(extraAmt):'none'}</div></div>
-        <div class="ast"><div class="ast-label">Total interest</div><div class="ast-val">${intPd===Infinity?'n/a':fmt(intPd)}</div></div>
-        <div class="ast"><div class="ast-label">Paid off</div><div class="ast-val">${months===Infinity?'never':months<12?months+'m':Math.floor(months/12)+'y '+months%12+'m'}</div></div>
+        <div class="ast"><div class="ast-label">Minimum</div><div class="ast-val" style="color:${def.color};opacity:0.7">${fmt(card.minPayment)}/mo</div></div>
+        <div class="ast"><div class="ast-label">Extra</div><div class="ast-val" style="color:${extraAmt>0?def.color:'#444'}">${extraAmt>0?'+'+fmt(extraAmt)+'/mo':'none'}</div></div>
+        <div class="ast"><div class="ast-label">Paid off</div><div class="ast-val" style="color:${months===Infinity?'#e05050':'#bbb'}">${months===Infinity?'never':months<12?months+'m':Math.floor(months/12)+'y '+months%12+'m'}</div></div>
       </div>
       ${i<data.cards.length-1?'<div style="height:0.5px;background:#2a2a2a;margin:0.1rem 0 0.9rem"></div>':''}`;
 
