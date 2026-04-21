@@ -172,6 +172,21 @@
   .vs-save { text-align: center; padding: 0.65rem 1rem; background: var(--surface); border-radius: var(--radius-sm); border: 0.5px solid var(--border); font-size: 12px; color: var(--text2); margin-top: 0.75rem; line-height: 1.6; }
   .vs-save strong { font-weight: 500; }
 
+  .drop-zone { margin-top: 1.25rem; border: 1px dashed var(--border2); border-radius: var(--radius); padding: 2rem 1rem; text-align: center; transition: border-color 0.15s, background 0.15s; cursor: default; }
+  .drop-zone.drag-over { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 5%, transparent); }
+  .drop-icon { color: var(--text3); margin-bottom: 0.75rem; display: flex; justify-content: center; }
+  .drop-label { font-size: 14px; font-weight: 500; color: var(--text2); margin-bottom: 4px; }
+  .drop-sub { font-size: 12px; color: var(--text3); margin-bottom: 0.75rem; }
+  .drop-browse { font-size: 12px; color: var(--ok); cursor: pointer; border-bottom: 0.5px solid var(--ok); padding-bottom: 1px; }
+  .import-row { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0; border-bottom: 0.5px solid var(--border); }
+  .import-row:last-child { border-bottom: none; }
+  .import-card-name { font-size: 13px; font-weight: 500; }
+  .import-old { font-size: 12px; color: var(--text2); }
+  .import-arrow { font-size: 12px; color: var(--text2); margin: 0 6px; }
+  .import-new { font-size: 13px; font-weight: 500; color: var(--ok); }
+  .import-not-found { font-size: 12px; color: var(--text3); font-style: italic; }
+  .import-error { font-size: 13px; color: var(--danger); padding: 0.5rem 0; }
+
   /* History */
   .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 0.85rem; }
   .filter-row select { padding: 6px 10px; font-size: 13px; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); background: var(--surface); color: var(--text); font-family: inherit; }
@@ -217,6 +232,17 @@
 
   <div id="section-overview" class="section active">
     <div class="card-list" id="card-list"></div>
+    <div class="drop-zone" id="drop-zone" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event)">
+      <div class="drop-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <div class="drop-label">Drop a bank statement to update balances</div>
+      <div class="drop-sub">PDF or CSV · card numbers 7024, 2384, 2250 are auto-detected</div>
+      <label class="drop-browse">
+        or browse files
+        <input type="file" accept=".pdf,.csv" style="display:none" onchange="handleFileInput(this)">
+      </label>
+    </div>
   </div>
 
   <div id="section-allocator" class="section">
@@ -257,7 +283,17 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="modal-overlay">
+<div class="modal-overlay" id="import-overlay">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title">Update balances from file</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:1rem" id="import-filename"></div>
+    <div id="import-results"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeImport()">Cancel</button>
+      <button class="btn btn-primary" onclick="applyImport()">Apply updates</button>
+    </div>
+  </div>
+</div>
   <div class="modal">
     <div class="modal-title">Log payment</div>
     <div class="modal-fields">
@@ -760,8 +796,148 @@ function switchTab(name,btn){
   if(name==='history')renderHistory();
 }
 
-document.getElementById('modal-overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+/* ── File import ── */
+let pendingImport=[];
+
+function handleDrop(e){
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const file=e.dataTransfer.files[0];
+  if(file)processFile(file);
+}
+
+function handleFileInput(input){
+  const file=input.files[0];
+  if(file)processFile(file);
+  input.value='';
+}
+
+function processFile(file){
+  const name=file.name.toLowerCase();
+  if(name.endsWith('.csv')){
+    const reader=new FileReader();
+    reader.onload=e=>parseCSV(e.target.result,file.name);
+    reader.readAsText(file);
+  } else if(name.endsWith('.pdf')){
+    const reader=new FileReader();
+    reader.onload=e=>parsePDF(e.target.result,file.name);
+    reader.readAsArrayBuffer(file);
+  } else {
+    alert('Please drop a PDF or CSV file.');
+  }
+}
+
+function parseCSV(text,filename){
+  const lines=text.trim().split(/\r?\n/);
+  if(lines.length<2){showImportError('CSV appears empty.',filename);return;}
+  const headers=lines[0].split(',').map(h=>h.trim().toLowerCase().replace(/['"]/g,''));
+  const balCol=headers.findIndex(h=>/(balance|amount|outstanding|owe)/i.test(h));
+  const accCol=headers.findIndex(h=>/(account|card|number|last.?4|ending)/i.test(h));
+  const detected=[];
+  for(let i=1;i<lines.length;i++){
+    const cols=lines[i].split(',').map(c=>c.trim().replace(/['"£$,]/g,''));
+    if(cols.length<2)continue;
+    const accVal=accCol>=0?cols[accCol]:'';
+    const balVal=balCol>=0?cols[balCol]:cols[cols.length-1];
+    const balance=parseFloat(balVal);
+    if(isNaN(balance))continue;
+    data.cards.forEach((card,idx)=>{
+      if(accVal&&accVal.includes(card.number)){
+        detected.push({idx,balance:Math.abs(balance)});
+      }
+    });
+  }
+  if(!detected.length){
+    const nums=data.cards.map(c=>c.number).join(', ');
+    showImportError(`No matching card numbers found (looking for ${nums}).`,filename);
+    return;
+  }
+  showImportConfirm(detected,filename);
+}
+
+function parsePDF(arrayBuffer,filename){
+  const bytes=new Uint8Array(arrayBuffer);
+  let text='';
+  try{
+    for(let i=0;i<bytes.length-1;i++){
+      if(bytes[i]>=32&&bytes[i]<127)text+=String.fromCharCode(bytes[i]);
+      else text+=' ';
+    }
+  } catch(e){showImportError('Could not read PDF.',filename);return;}
+  const detected=[];
+  data.cards.forEach((card,idx)=>{
+    const numPattern=new RegExp('('+card.number+'|\\*{4}\\s*'+card.number+'|ending\\s*'+card.number+')[^\\d]{0,80}?[£$]?\\s*([\\d,]+\\.\\d{2})','i');
+    const balPattern=new RegExp('([\\d,]+\\.\\d{2})[^\\d]{0,80}?('+card.number+')','i');
+    let m=text.match(numPattern)||text.match(balPattern);
+    if(m){
+      const raw=(m[2]||m[1]).replace(/,/g,'');
+      const balance=parseFloat(raw);
+      if(!isNaN(balance)&&balance>0&&balance<50000){
+        detected.push({idx,balance});
+      }
+    }
+  });
+  if(!detected.length){
+    showImportError('Could not find card balances in this PDF. Try a CSV export instead.',filename);
+    return;
+  }
+  showImportConfirm(detected,filename);
+}
+
+function showImportError(msg,filename){
+  document.getElementById('import-filename').textContent=filename;
+  document.getElementById('import-results').innerHTML=`<div class="import-error">${msg}</div>`;
+  pendingImport=[];
+  document.getElementById('import-overlay').classList.add('open');
+  document.querySelector('#import-overlay .btn-primary').style.display='none';
+}
+
+function showImportConfirm(detected,filename){
+  document.getElementById('import-filename').textContent=filename;
+  document.querySelector('#import-overlay .btn-primary').style.display='';
+  pendingImport=detected;
+  const seen=new Set(detected.map(d=>d.idx));
+  let html='';
+  data.cards.forEach((card,idx)=>{
+    const match=detected.find(d=>d.idx===idx);
+    if(match){
+      html+=`<div class="import-row">
+        <div><div class="import-card-name">${card.name} ···· ${card.number}</div></div>
+        <div style="display:flex;align-items:center">
+          <span class="import-old">${fmtD(card.balance)}</span>
+          <span class="import-arrow">→</span>
+          <span class="import-new">${fmtD(match.balance)}</span>
+        </div>
+      </div>`;
+    } else {
+      html+=`<div class="import-row">
+        <div class="import-card-name">${card.name} ···· ${card.number}</div>
+        <div class="import-not-found">not found in file</div>
+      </div>`;
+    }
+  });
+  document.getElementById('import-results').innerHTML=html;
+  document.getElementById('import-overlay').classList.add('open');
+}
+
+function closeImport(){
+  document.getElementById('import-overlay').classList.remove('open');
+  pendingImport=[];
+}
+
+function applyImport(){
+  pendingImport.forEach(({idx,balance})=>{
+    const old=data.cards[idx].balance;
+    data.cards[idx].balance=balance;
+    if(balance<old){
+      data.history.unshift({cardId:data.cards[idx].id,cardName:data.cards[idx].name,number:data.cards[idx].number,amount:+(old-balance).toFixed(2),type:'payment',date:new Date().toISOString().split('T')[0],note:'Imported from statement'});
+    }
+  });
+  save(data);closeImport();renderSummary();renderCards();
+}
 wireBudgetInput(document.getElementById('payoff-budget-input'));
+document.getElementById('modal-overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.getElementById('import-overlay').addEventListener('click',function(e){if(e.target===this)closeImport();});
 renderSummary();renderCards();populateSelects();
 </script>
 </body>
