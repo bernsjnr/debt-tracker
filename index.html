@@ -98,6 +98,9 @@
   .alloc-slot-right { text-align: right; display: flex; align-items: baseline; gap: 10px; }
   .alloc-slot-pct { font-size: 20px; font-weight: 500; }
   .alloc-slot-amt { font-size: 14px; color: #666; }
+  .alloc-amt-input { background: transparent; border: none; font-size: 16px; font-weight: 500; width: 70px; text-align: right; font-family: inherit; outline: none; border-bottom: 1px solid #333; padding-bottom: 1px; -moz-appearance: textfield; }
+  .alloc-amt-input::-webkit-inner-spin-button, .alloc-amt-input::-webkit-outer-spin-button { display: none; }
+  .alloc-amt-input:focus { border-bottom-color: #666; }
 
   .alloc-track-wrap { position: relative; height: 28px; display: flex; align-items: center; cursor: pointer; user-select: none; touch-action: none; margin-bottom: 6px; }
   .alloc-track-bg { position: absolute; left: 11px; right: 11px; height: 6px; background: #2e2e2e; border-radius: 3px; }
@@ -502,7 +505,7 @@ function renderAllocator(){
         </div>
         <div class="alloc-slot-right">
           <span class="alloc-slot-pct" style="color:${def.color}">${displayPct}%</span>
-          <span class="alloc-slot-amt">${fmt(alloc)}</span>
+          <input class="alloc-amt-input" id="aamt-${i}" type="number" value="${alloc}" min="${card.minPayment}" max="${monthlyBudget}" step="1" style="color:${def.color}" onkeydown="if(event.key==='Enter')this.blur()">
         </div>
       </div>
       <div class="alloc-track-wrap" id="atrack-${i}">
@@ -524,12 +527,12 @@ function renderAllocator(){
       ${i<data.cards.length-1?'<div style="height:0.5px;background:#2a2a2a;margin:0.1rem 0 0.9rem"></div>':''}`;
 
     slotsEl.appendChild(slot);
-    setupDrag(i, slot.querySelector('#atrack-'+i), slot.querySelector('#athumb-'+i));
+    setupDrag(i, slot.querySelector('#atrack-'+i), slot.querySelector('#athumb-'+i), slot.querySelector('#aamt-'+i));
   });
   wireBudgetInput(document.getElementById('budget-input'));
 }
 
-function setupDrag(idx, trackWrap, thumb){
+function setupDrag(idx, trackWrap, thumb, amtInput){
   function clientXToAlloc(clientX){
     const rect=trackWrap.getBoundingClientRect();
     const usable=rect.width-22;
@@ -574,6 +577,15 @@ function setupDrag(idx, trackWrap, thumb){
   });
   trackWrap.addEventListener('pointermove',e=>{if(!thumb.hasPointerCapture(e.pointerId))return;applyAndRedistribute(clientXToAlloc(e.clientX));});
   trackWrap.addEventListener('pointerup',e=>{thumb.releasePointerCapture(e.pointerId);});
+
+  if(amtInput){
+    amtInput.addEventListener('change',function(){
+      const v=parseFloat(this.value);
+      if(!isNaN(v)) applyAndRedistribute(Math.max(data.cards[idx].minPayment,Math.min(monthlyBudget,Math.round(v))));
+    });
+    amtInput.addEventListener('keydown',function(e){if(e.key==='Enter')this.blur();});
+    amtInput.addEventListener('focus',function(){this.select();});
+  }
 }
 
 
