@@ -105,14 +105,14 @@
   .alloc-lock-btn { background: transparent; border: none; cursor: pointer; padding: 4px; color: #444; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: color 0.15s, background 0.15s; }
   .alloc-lock-btn:hover { color: #888; background: #2a2a2a; }
   .alloc-lock-btn.locked { color: #e0a030; }
+  .alloc-track-wrap { position: relative; height: 28px; display: flex; align-items: center; cursor: pointer; user-select: none; touch-action: none; margin-bottom: 6px; overflow: hidden; border-radius: 3px; }
   .alloc-track-wrap.locked { opacity: 0.5; pointer-events: none; }
-  .alloc-amt-input.locked { opacity: 0.5; pointer-events: none; }
   .alloc-track-bg { position: absolute; left: 11px; right: 11px; height: 6px; background: #2e2e2e; border-radius: 3px; }
   .alloc-track-min-fill { position: absolute; left: 11px; height: 6px; border-radius: 3px 0 0 3px; opacity: 0.45; }
   .alloc-track-extra-fill { position: absolute; height: 6px; border-radius: 0 3px 3px 0; }
-  .alloc-track-min-marker { position: absolute; width: 2px; height: 16px; background: rgba(255,255,255,0.25); transform: translateX(-1px); z-index: 1; }
-  .alloc-thumb { position: absolute; width: 26px; height: 26px; border-radius: 50%; transform: translateX(-50%); cursor: grab; touch-action: none; border: 3px solid #1c1c1c; z-index: 2; }
-  .alloc-thumb:active { cursor: grabbing; transform: translateX(-50%) scale(1.1); }
+  .alloc-track-min-marker { position: absolute; width: 2px; height: 16px; background: rgba(255,255,255,0.25); transform: translateX(-1px); z-index: 1; top: 50%; margin-top: -8px; }
+  .alloc-thumb { position: absolute; width: 26px; height: 26px; border-radius: 50%; transform: translateX(-50%); cursor: grab; touch-action: none; border: 3px solid #1c1c1c; z-index: 2; top: 50%; margin-top: -13px; }
+  .alloc-thumb:active { cursor: grabbing; }
   .alloc-track-legend { display: flex; gap: 12px; margin-bottom: 10px; }
   .atl { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #555; }
   .atl-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
@@ -329,7 +329,7 @@ function applyBudget(raw){
   }
 
   syncBudgetInputs();
-  renderAllocator();
+  renderAllocator();requestAnimationFrame(positionTracks);
   renderPayoff();
 }
 
@@ -351,7 +351,7 @@ function setMinsOnly(){
   monthlyBudget=totalMin();
   allocs=data.cards.map(c=>c.minPayment);
   syncBudgetInputs();
-  renderAllocator();
+  renderAllocator();requestAnimationFrame(positionTracks);
   renderPayoff();
 }
 
@@ -363,7 +363,7 @@ function resetEqual(){
   const leftover=monthlyBudget-allocs.reduce((s,a)=>s+a,0);
   if(leftover!==0)allocs[0]+=leftover;
   syncBudgetInputs();
-  renderAllocator();
+  renderAllocator();requestAnimationFrame(positionTracks);
   renderPayoff();
 }
 let allocs=(()=>{const tMin=CARD_DEFS.reduce((s,c)=>s+c.minPayment,0);const ex=Math.max(0,monthlyBudget-tMin);const per=Math.floor(ex/CARD_DEFS.length);const a=CARD_DEFS.map(c=>c.minPayment+per);a[0]+=monthlyBudget-a.reduce((s,v)=>s+v,0);return a;})();
@@ -521,10 +521,10 @@ function renderAllocator(){
       </div>
       <div class="alloc-track-wrap ${isLocked?'locked':''}" id="atrack-${i}">
         <div class="alloc-track-bg"></div>
-        <div class="alloc-track-min-fill" style="width:calc(${minPct}% * (100% - 22px) / 100% + 2px);background:${isLocked?'#555':def.color}"></div>
-        <div class="alloc-track-extra-fill" style="left:calc(${minPct}% * (100% - 22px) / 100% + 11px + 2px);width:calc(${Math.max(0,pct-minPct)}% * (100% - 22px) / 100%);background:${isLocked?'#555':def.color}"></div>
-        <div class="alloc-track-min-marker" style="left:calc(${minPct}% * (100% - 22px) / 100% + 11px)"></div>
-        <div class="alloc-thumb" id="athumb-${i}" style="left:calc(${pct}% * (100% - 22px) / 100% + 11px);background:${isLocked?'#555':def.color}"></div>
+        <div class="alloc-track-min-fill" id="amin-fill-${i}" style="background:${isLocked?'#555':def.color}"></div>
+        <div class="alloc-track-extra-fill" id="aextra-fill-${i}" style="background:${isLocked?'#555':def.color}"></div>
+        <div class="alloc-track-min-marker" id="amin-marker-${i}"></div>
+        <div class="alloc-thumb" id="athumb-${i}" style="background:${isLocked?'#555':def.color}"></div>
       </div>
       <div class="alloc-track-legend">
         <div class="atl"><div class="atl-dot" style="background:${isLocked?'#555':def.color};opacity:0.45"></div>Minimum ${fmt(card.minPayment)}</div>
@@ -542,11 +542,34 @@ function renderAllocator(){
     setupDrag(i, slot.querySelector('#atrack-'+i), slot.querySelector('#athumb-'+i), slot.querySelector('#aamt-'+i));
   });
   wireBudgetInput(document.getElementById('budget-input'));
+  requestAnimationFrame(positionTracks);
 }
 
 function toggleLock(idx){
   locks[idx]=!locks[idx];
-  renderAllocator();
+  renderAllocator();requestAnimationFrame(positionTracks);
+}
+
+function positionTracks(){
+  data.cards.forEach((card,i)=>{
+    const track=document.getElementById('atrack-'+i);
+    if(!track)return;
+    const thumb=document.getElementById('athumb-'+i);
+    const minFill=document.getElementById('amin-fill-'+i);
+    const extraFill=document.getElementById('aextra-fill-'+i);
+    const minMarker=document.getElementById('amin-marker-'+i);
+    const W=track.offsetWidth;
+    const usable=W-22;
+    const alloc=allocs[i];
+    const pxPerPound=usable/monthlyBudget;
+    const thumbPx=11+alloc*pxPerPound;
+    const minPx=11+card.minPayment*pxPerPound;
+    const extraPx=Math.max(0,alloc-card.minPayment)*pxPerPound;
+    if(thumb)thumb.style.left=thumbPx+'px';
+    if(minFill){minFill.style.left='11px';minFill.style.width=Math.max(0,minPx-11)+'px';}
+    if(extraFill){extraFill.style.left=minPx+'px';extraFill.style.width=extraPx+'px';}
+    if(minMarker)minMarker.style.left=minPx+'px';
+  });
 }
 
 function setupDrag(idx, trackWrap, thumb, amtInput){
@@ -581,7 +604,8 @@ function setupDrag(idx, trackWrap, thumb, amtInput){
     }
     const remainder=monthlyBudget-allocs.reduce((s,a)=>s+a,0);
     if(remainder!==0){const adj=unlocked.find(j=>allocs[j]+remainder>=data.cards[j].minPayment);if(adj!==undefined)allocs[adj]+=remainder;}
-    renderAllocator();
+    renderAllocator();requestAnimationFrame(positionTracks);
+    requestAnimationFrame(positionTracks);
   }
 
   thumb.addEventListener('pointerdown',e=>{thumb.setPointerCapture(e.pointerId);e.preventDefault();});
@@ -731,7 +755,7 @@ function switchTab(name,btn){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   btn.classList.add('active');document.getElementById('section-'+name).classList.add('active');
-  if(name==='allocator'){renderAllocator();syncBudgetInputs();}
+  if(name==='allocator'){renderAllocator();syncBudgetInputs();requestAnimationFrame(positionTracks);}
   if(name==='payoff'){renderPayoff();syncBudgetInputs();}
   if(name==='history')renderHistory();
 }
