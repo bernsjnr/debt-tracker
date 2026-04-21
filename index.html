@@ -218,7 +218,7 @@
       <div class="ctrl-row">
         <div style="display:flex;align-items:baseline;gap:4px;flex:1">
           <span style="font-size:18px;color:var(--text2)">£</span>
-          <input type="number" id="payoff-budget-input" min="0" step="10" style="font-size:22px;font-weight:500;width:120px;border:none;background:transparent;color:var(--text);font-family:inherit;outline:none" oninput="onSharedBudget(this.value)">
+          <input type="number" id="payoff-budget-input" min="0" step="10" style="font-size:22px;font-weight:500;width:120px;border:none;background:transparent;color:var(--text);font-family:inherit;outline:none">
         </div>
         <div style="font-size:12px;color:var(--text2);white-space:nowrap" id="payoff-budget-sub"></div>
         <div class="strat-pills">
@@ -284,19 +284,57 @@ function syncBudgetInputs(){
   const bi=document.getElementById('budget-input');
   const pi=document.getElementById('payoff-budget-input');
   const sub=document.getElementById('payoff-budget-sub');
-  if(bi)bi.value=monthlyBudget;
-  if(pi)pi.value=monthlyBudget;
+  if(bi&&document.activeElement!==bi)bi.value=monthlyBudget;
+  if(pi&&document.activeElement!==pi)pi.value=monthlyBudget;
   const ex=extraAboveMin();
   const tMin=totalMin();
   if(sub)sub.textContent=fmt(tMin)+' minimums + '+fmt(ex)+' extra';
 }
 
-function onSharedBudget(v){
-  const parsed=parseFloat(v)||0;
-  monthlyBudget=Math.max(totalMin(),parsed);
+let _budgetTimer=null;
+
+function applyBudget(raw){
+  const parsed=parseFloat(raw);
+  if(isNaN(parsed)||parsed<=0)return;
+  const tMin=totalMin();
+  monthlyBudget=Math.max(tMin,parsed);
   const scale=monthlyBudget/Math.max(1,allocs.reduce((s,a)=>s+a,0));
   allocs=allocs.map((a,i)=>Math.max(data.cards[i].minPayment,Math.round(a*scale)));
   forceFullAllocation();
+  syncBudgetInputs();
+  renderAllocator();
+  renderPayoff();
+}
+
+function wireBudgetInput(el){
+  if(!el)return;
+  el.addEventListener('change',function(){applyBudget(this.value);});
+  el.addEventListener('keydown',function(e){if(e.key==='Enter'){this.blur();}});
+  el.addEventListener('input',function(){
+    clearTimeout(_budgetTimer);
+    const v=this.value;
+    _budgetTimer=setTimeout(()=>applyBudget(v),800);
+  });
+}
+
+function onSharedBudget(v){applyBudget(v);}
+function onBudgetInput(v){applyBudget(v);}
+
+function setMinsOnly(){
+  monthlyBudget=totalMin();
+  allocs=data.cards.map(c=>c.minPayment);
+  syncBudgetInputs();
+  renderAllocator();
+  renderPayoff();
+}
+
+function resetEqual(){
+  const tMin=totalMin();
+  const ex=Math.max(0,monthlyBudget-tMin);
+  const perCard=Math.floor(ex/data.cards.length);
+  allocs=data.cards.map(c=>c.minPayment+perCard);
+  const leftover=monthlyBudget-allocs.reduce((s,a)=>s+a,0);
+  if(leftover!==0)allocs[0]+=leftover;
   syncBudgetInputs();
   renderAllocator();
   renderPayoff();
@@ -400,7 +438,7 @@ function renderAllocator(){
         <div class="alloc-budget-label">Monthly debt budget</div>
         <div class="alloc-budget-wrap">
           <span class="alloc-budget-sym">£</span>
-          <input class="alloc-budget-input" type="number" id="budget-input" value="${monthlyBudget}" min="0" step="10" oninput="onBudgetInput(this.value)">
+          <input class="alloc-budget-input" type="number" id="budget-input" value="${monthlyBudget}" min="0" step="10">
         </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
@@ -513,35 +551,6 @@ function setupDrag(idx, trackWrap, thumb){
   trackWrap.addEventListener('pointerup',e=>{thumb.releasePointerCapture(e.pointerId);});
 }
 
-function onBudgetInput(v){
-  monthlyBudget=Math.max(totalMin(),parseFloat(v)||0);
-  const scale=monthlyBudget/Math.max(1,allocs.reduce((s,a)=>s+a,0));
-  allocs=allocs.map((a,i)=>Math.max(data.cards[i].minPayment,Math.round(a*scale)));
-  forceFullAllocation();
-  syncBudgetInputs();
-  renderAllocator();
-  renderPayoff();
-}
-
-function setMinsOnly(){
-  monthlyBudget=totalMin();
-  allocs=data.cards.map(c=>c.minPayment);
-  syncBudgetInputs();
-  renderAllocator();
-  renderPayoff();
-}
-
-function resetEqual(){
-  const tMin=totalMin();
-  const ex=Math.max(0,monthlyBudget-tMin);
-  const perCard=Math.floor(ex/data.cards.length);
-  allocs=data.cards.map(c=>c.minPayment+perCard);
-  const leftover=monthlyBudget-allocs.reduce((s,a)=>s+a,0);
-  if(leftover!==0)allocs[0]+=leftover;
-  syncBudgetInputs();
-  renderAllocator();
-  renderPayoff();
-}
 
 /* ── Payoff ── */
 function simulate(extraAmt,strategy){
@@ -666,12 +675,13 @@ function switchTab(name,btn){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   btn.classList.add('active');document.getElementById('section-'+name).classList.add('active');
-  if(name==='allocator'){renderAllocator();syncBudgetInputs();}
+  if(name==='allocator'){renderAllocator();syncBudgetInputs();wireBudgetInput(document.getElementById('budget-input'));}
   if(name==='payoff'){renderPayoff();syncBudgetInputs();}
   if(name==='history')renderHistory();
 }
 
 document.getElementById('modal-overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+wireBudgetInput(document.getElementById('payoff-budget-input'));
 renderSummary();renderCards();populateSelects();
 </script>
 </body>
