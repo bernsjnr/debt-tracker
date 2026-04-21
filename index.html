@@ -273,7 +273,7 @@ function save(d){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(d));}catch(
 let data=load();
 let strat='avalanche',extra=200;
 let allocBudget=500;
-let allocs=CARD_DEFS.map(c=>c.minPayment);
+let allocs=(()=>{const tMin=CARD_DEFS.reduce((s,c)=>s+c.minPayment,0);const ex=Math.max(0,500-tMin);const per=Math.floor(ex/CARD_DEFS.length);const a=CARD_DEFS.map(c=>c.minPayment+per);a[0]+=500-a.reduce((s,v)=>s+v,0);return a;})();
 
 function fmt(n){return'£'+Math.abs(n).toLocaleString('en-GB',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function fmtD(n){return'£'+Math.abs(n).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -347,20 +347,24 @@ function intTotal(balance,apr,monthly){
   return m===Infinity?Infinity:Math.max(0,monthly*m-balance);
 }
 
-function clampAllocs(){
+function totalMin(){return data.cards.reduce((s,c)=>s+c.minPayment,0);}
+
+function forceFullAllocation(){
+  const tMin=totalMin();
+  if(allocBudget<tMin){allocs=data.cards.map(c=>c.minPayment);return;}
   let total=allocs.reduce((s,a)=>s+a,0);
-  for(let i=data.cards.length-1;i>=0&&total>allocBudget;i--){
-    const cut=Math.min(allocs[i]-data.cards[i].minPayment,total-allocBudget);
-    allocs[i]-=cut;total-=cut;
-  }
+  const diff=allocBudget-total;
+  if(Math.abs(diff)>0){allocs[0]=Math.max(data.cards[0].minPayment,allocs[0]+diff);}
+  total=allocs.reduce((s,a)=>s+a,0);
+  if(total!==allocBudget){const rem=allocBudget-total;allocs[0]+=rem;}
 }
 
 function renderAllocator(){
   const outer=document.getElementById('alloc-outer');
+  forceFullAllocation();
   const totalAlloc=allocs.reduce((s,a)=>s+a,0);
-  const unalloc=Math.max(0,allocBudget-totalAlloc);
   const maxM=Math.max(...data.cards.map((c,i)=>mthsToPayoff(c.balance,c.apr,allocs[i])));
-  const pillOk=totalAlloc<=allocBudget;
+  const totalPct=Math.round(allocs.reduce((s,a)=>s+a/allocBudget*100,0));
 
   outer.innerHTML=`
     <div class="alloc-top">
@@ -376,14 +380,14 @@ function renderAllocator(){
           <button class="alloc-qbtn" onclick="setMinsOnly()">Minimums only</button>
           <button class="alloc-qbtn" onclick="resetEqual()">Split equally</button>
         </div>
-        <div class="alloc-total-pill ${pillOk?'ok':'over'}">${pillOk?'&#10003;':''} ${fmt(totalAlloc)} allocated${unalloc>0?' · '+fmt(unalloc)+' free':''}</div>
+        <div class="alloc-total-pill ok">&#10003; 100% split · ${fmt(totalAlloc)}</div>
       </div>
     </div>
     <div id="alloc-slots"></div>
     <div style="height:0.5px;background:#2a2a2a;margin:0.25rem 0 0.85rem"></div>
     <div class="alloc-footer">
       <span class="alloc-footer-label">Debt free in</span>
-      <div class="alloc-footer-bar-wrap"><div class="alloc-footer-bar" style="width:${Math.min(100,totalAlloc/Math.max(1,allocBudget)*100)}%;background:#4ac080"></div></div>
+      <div class="alloc-footer-bar-wrap"><div class="alloc-footer-bar" style="width:100%;background:#4ac080"></div></div>
       <span class="alloc-footer-val" style="color:${maxM===Infinity?'#e05050':'#4ac080'}">${maxM===Infinity?'never':Math.floor(maxM/12)+'y '+maxM%12+'m'}</span>
     </div>`;
 
@@ -391,27 +395,21 @@ function renderAllocator(){
   data.cards.forEach((card,i)=>{
     const def=CARD_DEFS[i];
     const alloc=allocs[i];
-    const pct=allocBudget>0?Math.min(100,alloc/allocBudget*100):0;
-    const minPct=allocBudget>0?Math.min(100,card.minPayment/allocBudget*100):0;
-    const thumbPct=pct;
+    const pct=allocBudget>0?alloc/allocBudget*100:0;
+    const minPct=allocBudget>0?card.minPayment/allocBudget*100:0;
     const months=mthsToPayoff(card.balance,card.apr,alloc);
     const intPd=intTotal(card.balance,card.apr,alloc);
     const extraAmt=alloc-card.minPayment;
-    const displayPct=Math.round(pct);
+    const displayPct=Math.round(pct*10)/10;
+
+    const icon=`<svg viewBox="0 0 24 24" fill="none" stroke="${def.color}" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`;
 
     const slot=document.createElement('div');
     slot.className='alloc-slot';
-
-    const icons=[
-      `<svg viewBox="0 0 24 24" fill="none" stroke="${def.color}" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`,
-      `<svg viewBox="0 0 24 24" fill="none" stroke="${def.color}" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`,
-      `<svg viewBox="0 0 24 24" fill="none" stroke="${def.color}" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`,
-    ];
-
     slot.innerHTML=`
       <div class="alloc-slot-header">
         <div class="alloc-slot-left">
-          <div class="alloc-slot-icon" style="background:${def.iconBg}">${icons[i]}</div>
+          <div class="alloc-slot-icon" style="background:${def.iconBg}">${icon}</div>
           <div>
             <div class="alloc-slot-name">${card.name} ···· ${card.number}</div>
             <div class="alloc-slot-sub">${card.apr}% APR · min ${fmt(card.minPayment)}/mo</div>
@@ -424,9 +422,9 @@ function renderAllocator(){
       </div>
       <div class="alloc-track-wrap" id="atrack-${i}">
         <div class="alloc-track-bg"></div>
-        <div class="alloc-track-fill" id="afill-${i}" style="width:calc(${pct}% - 11px + 13px);left:11px;background:${def.trackColor}"></div>
-        <div class="alloc-track-min-marker" id="amin-${i}" style="left:calc(${minPct}% * (100% - 22px) / 100% + 11px)"></div>
-        <div class="alloc-thumb" id="athumb-${i}" style="left:calc(${thumbPct}% * (100% - 22px) / 100% + 11px);background:${def.color}"></div>
+        <div class="alloc-track-fill" id="afill-${i}" style="width:calc(${pct}% * (100% - 22px) / 100% + 13px);left:11px;background:${def.trackColor}"></div>
+        <div class="alloc-track-min-marker" style="left:calc(${minPct}% * (100% - 22px) / 100% + 11px)"></div>
+        <div class="alloc-thumb" id="athumb-${i}" style="left:calc(${pct}% * (100% - 22px) / 100% + 11px);background:${def.color}"></div>
       </div>
       <div class="alloc-slot-stats">
         <div class="ast"><div class="ast-label">Extra this card</div><div class="ast-val" style="color:${extraAmt>0?def.color:'#555'}">${extraAmt>0?'+'+fmt(extraAmt):'none'}</div></div>
@@ -436,49 +434,46 @@ function renderAllocator(){
       ${i<data.cards.length-1?'<div style="height:0.5px;background:#2a2a2a;margin:0.1rem 0 0.9rem"></div>':''}`;
 
     slotsEl.appendChild(slot);
-    setupDrag(i, slot.querySelector('#atrack-'+i), slot.querySelector('#afill-'+i), slot.querySelector('#athumb-'+i));
+    setupDrag(i, slot.querySelector('#atrack-'+i), slot.querySelector('#athumb-'+i));
   });
 }
 
-function setupDrag(idx, trackWrap, fill, thumb){
-  function pctToAlloc(pct){
-    const raw=Math.round(pct/100*allocBudget);
-    return Math.max(data.cards[idx].minPayment,Math.min(allocBudget,raw));
-  }
-
+function setupDrag(idx, trackWrap, thumb){
   function clientXToAlloc(clientX){
     const rect=trackWrap.getBoundingClientRect();
     const usable=rect.width-22;
-    const x=clientX-rect.left-11;
-    const pct=Math.max(0,Math.min(100,x/usable*100));
-    return pctToAlloc(pct);
+    const x=Math.max(0,Math.min(usable,clientX-rect.left-11));
+    const raw=Math.round(x/usable*allocBudget);
+    return Math.max(data.cards[idx].minPayment,Math.min(allocBudget,raw));
   }
 
   function applyAndRedistribute(newVal){
-    const diff=newVal-allocs[idx];
+    const oldVal=allocs[idx];
+    const diff=newVal-oldVal;
+    if(diff===0)return;
     allocs[idx]=newVal;
-    if(diff>0){
-      let excess=allocs.reduce((s,a)=>s+a,0)-allocBudget;
-      for(let j=data.cards.length-1;j>=0&&excess>0;j--){
-        if(j===idx)continue;
-        const cut=Math.min(allocs[j]-data.cards[j].minPayment,excess);
-        allocs[j]-=cut;excess-=cut;
-      }
+    const others=data.cards.map((_,j)=>j).filter(j=>j!==idx);
+    const prevTotal=others.reduce((s,j)=>s+allocs[j],0);
+    const newOtherTotal=allocBudget-newVal;
+    if(newOtherTotal<others.reduce((s,j)=>s+data.cards[j].minPayment,0)){
+      allocs[idx]=oldVal;return;
     }
+    if(prevTotal>0){
+      others.forEach(j=>{
+        allocs[j]=Math.max(data.cards[j].minPayment,Math.round(allocs[j]/prevTotal*newOtherTotal));
+      });
+    } else {
+      const share=Math.floor(newOtherTotal/others.length);
+      others.forEach(j=>{allocs[j]=Math.max(data.cards[j].minPayment,share);});
+    }
+    const remainder=allocBudget-allocs.reduce((s,a)=>s+a,0);
+    if(remainder!==0){const adj=others.find(j=>allocs[j]+remainder>=data.cards[j].minPayment);if(adj!==undefined)allocs[adj]+=remainder;}
     renderAllocator();
   }
 
-  thumb.addEventListener('pointerdown',e=>{
-    thumb.setPointerCapture(e.pointerId);
-    e.preventDefault();
-  });
-  thumb.addEventListener('pointermove',e=>{
-    if(!thumb.hasPointerCapture(e.pointerId))return;
-    applyAndRedistribute(clientXToAlloc(e.clientX));
-  });
-  thumb.addEventListener('pointerup',e=>{
-    thumb.releasePointerCapture(e.pointerId);
-  });
+  thumb.addEventListener('pointerdown',e=>{thumb.setPointerCapture(e.pointerId);e.preventDefault();});
+  thumb.addEventListener('pointermove',e=>{if(!thumb.hasPointerCapture(e.pointerId))return;applyAndRedistribute(clientXToAlloc(e.clientX));});
+  thumb.addEventListener('pointerup',e=>{thumb.releasePointerCapture(e.pointerId);});
 
   trackWrap.addEventListener('pointerdown',e=>{
     if(e.target===thumb)return;
@@ -486,39 +481,32 @@ function setupDrag(idx, trackWrap, fill, thumb){
     thumb.setPointerCapture(e.pointerId);
     e.preventDefault();
   });
-  trackWrap.addEventListener('pointermove',e=>{
-    if(!thumb.hasPointerCapture(e.pointerId))return;
-    applyAndRedistribute(clientXToAlloc(e.clientX));
-  });
-  trackWrap.addEventListener('pointerup',e=>{
-    thumb.releasePointerCapture(e.pointerId);
-  });
+  trackWrap.addEventListener('pointermove',e=>{if(!thumb.hasPointerCapture(e.pointerId))return;applyAndRedistribute(clientXToAlloc(e.clientX));});
+  trackWrap.addEventListener('pointerup',e=>{thumb.releasePointerCapture(e.pointerId);});
 }
 
 function onBudgetInput(v){
-  const newBudget=Math.max(0,parseFloat(v)||0);
-  const totalMin=data.cards.reduce((s,c)=>s+c.minPayment,0);
-  allocBudget=newBudget;
-  if(newBudget<totalMin){allocs=data.cards.map(c=>c.minPayment);}
-  else{clampAllocs();}
+  allocBudget=Math.max(totalMin(),parseFloat(v)||0);
+  const scale=allocBudget/Math.max(1,allocs.reduce((s,a)=>s+a,0));
+  allocs=allocs.map((a,i)=>Math.max(data.cards[i].minPayment,Math.round(a*scale)));
+  forceFullAllocation();
   renderAllocator();
 }
 
 function setMinsOnly(){
-  const totalMin=data.cards.reduce((s,c)=>s+c.minPayment,0);
-  allocBudget=totalMin;
-  document.querySelector('.alloc-budget-input').value=totalMin;
+  allocBudget=totalMin();
   allocs=data.cards.map(c=>c.minPayment);
+  document.querySelector('.alloc-budget-input').value=allocBudget;
   renderAllocator();
 }
 
 function resetEqual(){
-  const totalMin=data.cards.reduce((s,c)=>s+c.minPayment,0);
-  const ex=Math.max(0,allocBudget-totalMin);
+  const tMin=totalMin();
+  const ex=Math.max(0,allocBudget-tMin);
   const perCard=Math.floor(ex/data.cards.length);
   allocs=data.cards.map(c=>c.minPayment+perCard);
   const leftover=allocBudget-allocs.reduce((s,a)=>s+a,0);
-  if(leftover>0)allocs[0]+=leftover;
+  if(leftover!==0)allocs[0]+=leftover;
   renderAllocator();
 }
 
