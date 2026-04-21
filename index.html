@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Debt Tracker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f5f3;
+    --surface: #ffffff;
+    --surface2: #f0efed;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --text: #1a1a1a;
+    --text2: #6b6b6b;
+    --text3: #9a9a9a;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --danger: #c0392b;
+    --warn: #b8860b;
+    --ok: #1a7a4a;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141414;
+      --surface: #1e1e1e;
+      --surface2: #272727;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.18);
+      --text: #f0f0f0;
+      --text2: #a0a0a0;
+      --text3: #666;
+      --danger: #e05a4a;
+      --warn: #d4a030;
+      --ok: #3ab870;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 4rem;
+  }
+
+  .app-header {
+    background: var(--surface);
+    border-bottom: 0.5px solid var(--border);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .app-title { font-size: 18px; font-weight: 500; }
+  .app-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  .btn {
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border2);
+    font-size: 13px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text);
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .btn:hover { background: var(--surface2); }
+  .btn-primary {
+    background: var(--text);
+    color: var(--bg);
+    border-color: transparent;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+  .container { max-width: 680px; margin: 0 auto; padding: 1.5rem 1rem; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+
+  @media (min-width: 480px) {
+    .summary-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  .metric {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem 1rem;
+  }
+  .metric-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+  .metric-value { font-size: 18px; font-weight: 500; }
+  .metric-value.danger { color: var(--danger); }
+  .metric-value.warn { color: var(--warn); }
+  .metric-value.ok { color: var(--ok); }
+
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+  .tab {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border2);
+    font-size: 13px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text2);
+    white-space: nowrap;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .tab.active {
+    background: var(--text);
+    color: var(--bg);
+    border-color: transparent;
+  }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .card-list { display: flex; flex-direction: column; gap: 10px; }
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+    overflow: hidden;
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.1rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .card-name { font-size: 14px; font-weight: 500; }
+  .card-num { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .card-right { text-align: right; }
+  .card-balance { font-size: 20px; font-weight: 500; }
+  .card-avail { font-size: 12px; color: var(--text2); }
+
+  .apr-badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .apr-high { background: #fce8e8; color: #a32d2d; }
+  .apr-mid { background: #faeeda; color: #854f0b; }
+  .apr-low { background: #eaf3de; color: #3b6d11; }
+
+  .card-body {
+    padding: 0 1.1rem 1rem;
+    border-top: 0.5px solid var(--border);
+  }
+  .card-body.hidden { display: none; }
+
+  .bar-wrap { margin-top: 0.85rem; }
+  .bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 4px;
+  }
+  .bar-bg {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 0.85rem;
+  }
+  .stat-box {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 0.75rem;
+  }
+  .stat-label { font-size: 11px; color: var(--text2); }
+  .stat-val { font-size: 14px; font-weight: 500; margin-top: 2px; }
+
+  .update-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 1rem;
+    padding-top: 0.85rem;
+    border-top: 0.5px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .update-row label { font-size: 12px; color: var(--text2); }
+  .update-row input {
+    flex: 1;
+    min-width: 100px;
+    padding: 6px 10px;
+    font-size: 13px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border2);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+  }
+
+  /* Payoff */
+  .extra-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+    padding: 1rem;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+  }
+  .extra-row label { font-size: 13px; color: var(--text2); white-space: nowrap; }
+  .extra-row input {
+    width: 100px;
+    padding: 6px 10px;
+    font-size: 14px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border2);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+  }
+  .strat-toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+  .strat-btn {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border2);
+    font-size: 12px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text2);
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .strat-btn.active {
+    background: var(--surface2);
+    color: var(--text);
+    border-color: var(--border2);
+    font-weight: 500;
+  }
+
+  .payoff-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+    padding: 1rem 1.1rem;
+    margin-bottom: 10px;
+  }
+  .rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 500;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+  .r1 { background: #fce8e8; color: #a32d2d; }
+  .r2 { background: #faeeda; color: #854f0b; }
+  .r3 { background: #eaf3de; color: #3b6d11; }
+
+  .payoff-summary {
+    background: var(--surface2);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+    margin-top: 1rem;
+  }
+  .payoff-summary-title {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+  }
+  .proj-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .proj-label { font-size: 11px; color: var(--text2); margin-bottom: 2px; }
+  .proj-val { font-size: 15px; font-weight: 500; }
+
+  /* History */
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+  }
+  .filter-row select {
+    padding: 6px 10px;
+    font-size: 13px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border2);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+  }
+  .history-list {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+    overflow: hidden;
+  }
+  .log-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.85rem 1.1rem;
+    border-bottom: 0.5px solid var(--border);
+    font-size: 13px;
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-note { font-weight: 500; }
+  .log-card { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .log-date { font-size: 11px; color: var(--text3); }
+  .log-amount { font-weight: 500; font-size: 14px; }
+  .empty-state {
+    padding: 2.5rem;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text2);
+  }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 340px;
+    border: 0.5px solid var(--border2);
+  }
+  .modal-title { font-size: 16px; font-weight: 500; margin-bottom: 1rem; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--text2); }
+  .field input, .field select, .field textarea {
+    padding: 8px 10px;
+    font-size: 13px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border2);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    width: 100%;
+  }
+  .modal-fields { display: flex; flex-direction: column; gap: 12px; }
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 1.25rem;
+  }
+
+  /* Mini pill */
+  .pill {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: var(--surface2);
+    color: var(--text2);
+    margin-left: 5px;
+  }
+
+  .pg-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 0.75rem;
+  }
+  .pg-stat { background: var(--surface2); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; }
+  .pg-label { font-size: 11px; color: var(--text2); }
+  .pg-val { font-size: 13px; font-weight: 500; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div>
+    <div class="app-title">Debt tracker</div>
+    <div class="app-sub" id="header-sub">3 cards · all APRs confirmed</div>
+  </div>
+  <button class="btn btn-primary btn-sm" onclick="openModal()">+ Log payment</button>
+</div>
+
+<div class="container">
+  <div class="summary-grid" id="summary-grid"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('overview', this)">Overview</button>
+    <button class="tab" onclick="switchTab('payoff', this)">Payoff plan</button>
+    <button class="tab" onclick="switchTab('history', this)">History</button>
+  </div>
+
+  <div id="section-overview" class="section active">
+    <div class="card-list" id="card-list"></div>
+  </div>
+
+  <div id="section-payoff" class="section">
+    <div class="extra-row">
+      <label>Extra monthly (£)</label>
+      <input type="number" id="extra-payment" value="200" min="0" step="10" oninput="renderPayoff()">
+      <div class="strat-toggle">
+        <button class="strat-btn active" onclick="setStrategy('avalanche', this)">Avalanche (APR)</button>
+        <button class="strat-btn" onclick="setStrategy('snowball', this)">Snowball (balance)</button>
+      </div>
+    </div>
+    <div id="payoff-list"></div>
+    <div class="payoff-summary" id="payoff-summary"></div>
+  </div>
+
+  <div id="section-history" class="section">
+    <div class="filter-row">
+      <select id="filter-card" onchange="renderHistory()">
+        <option value="all">All cards</option>
+      </select>
+      <select id="filter-type" onchange="renderHistory()">
+        <option value="all">All types</option>
+        <option value="payment">Payments</option>
+        <option value="charge">Charges</option>
+      </select>
+    </div>
+    <div class="history-list" id="history-list"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">Log payment</div>
+    <div class="modal-fields">
+      <div class="field">
+        <label>Card</label>
+        <select id="modal-card"></select>
+      </div>
+      <div class="field">
+        <label>Amount (£)</label>
+        <input type="number" id="modal-amount" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="modal-date">
+      </div>
+      <div class="field">
+        <label>Note (optional)</label>
+        <input type="text" id="modal-note" placeholder="e.g. minimum payment">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="savePayment()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'debt_tracker_v2';
+
+const defaultCards = [
+  { id: 'll7024', name: 'Lloyds Bank', number: '7024', balance: 3036.01, limit: 6700, apr: 26.94, minPayment: 61, dueDay: 20 },
+  { id: 'ms2384', name: 'M&S Bank',    number: '2384', balance: 1049.32, limit: 1300, apr: 24.9,  minPayment: 25, dueDay: 15 },
+  { id: 'll2250', name: 'Lloyds Bank', number: '2250', balance: 5122.84, limit: 6200, apr: 12.38, minPayment: 103, dueDay: 25 },
+];
+
+function load() {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    return s ? JSON.parse(s) : { cards: defaultCards.map(c => ({...c})), history: [] };
+  } catch(e) { return { cards: defaultCards.map(c => ({...c})), history: [] }; }
+}
+function save(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e) {} }
+
+let data = load();
+let strategy = 'avalanche';
+
+function fmt(n) { return '£' + Math.abs(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function aprClass(apr) { return apr >= 24 ? 'apr-high' : apr >= 16 ? 'apr-mid' : 'apr-low'; }
+function mi(card) { return card.balance * (card.apr / 100 / 12); }
+
+function renderSummary() {
+  const total = data.cards.reduce((s, c) => s + c.balance, 0);
+  const totalInt = data.cards.reduce((s, c) => s + mi(c), 0);
+  const totalMin = data.cards.reduce((s, c) => s + c.minPayment, 0);
+  const totalAvail = data.cards.reduce((s, c) => s + (c.limit - c.balance), 0);
+  document.getElementById('summary-grid').innerHTML = `
+    <div class="metric"><div class="metric-label">Total debt</div><div class="metric-value danger">${fmt(total)}</div></div>
+    <div class="metric"><div class="metric-label">Monthly interest</div><div class="metric-value warn">${fmt(totalInt)}</div></div>
+    <div class="metric"><div class="metric-label">Min payments</div><div class="metric-value">${fmt(totalMin)}</div></div>
+    <div class="metric"><div class="metric-label">Available credit</div><div class="metric-value ok">${fmt(totalAvail)}</div></div>
+  `;
+}
+
+function renderCards() {
+  const container = document.getElementById('card-list');
+  container.innerHTML = '';
+  data.cards.forEach((card, i) => {
+    const used = card.balance / card.limit * 100;
+    const avail = card.limit - card.balance;
+    const barColor = used > 80 ? '#c0392b' : used > 60 ? '#b8860b' : '#1a7a4a';
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.innerHTML = `
+      <div class="card-header" onclick="toggleCard(${i})">
+        <div>
+          <div class="card-name">${card.name} <span class="apr-badge ${aprClass(card.apr)}">${card.apr}% APR</span></div>
+          <div class="card-num">···· ${card.number}</div>
+        </div>
+        <div class="card-right">
+          <div class="card-balance">${fmt(card.balance)}</div>
+          <div class="card-avail">${fmt(avail)} available</div>
+        </div>
+      </div>
+      <div class="card-body hidden" id="cb-${i}">
+        <div class="bar-wrap">
+          <div class="bar-label"><span>Credit used</span><span>${used.toFixed(0)}%</span></div>
+          <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(used,100)}%;background:${barColor}"></div></div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-box"><div class="stat-label">Monthly interest</div><div class="stat-val">${fmt(mi(card))}</div></div>
+          <div class="stat-box"><div class="stat-label">Min payment</div><div class="stat-val">${fmt(card.minPayment)}</div></div>
+          <div class="stat-box"><div class="stat-label">Due day</div><div class="stat-val">${card.dueDay}th</div></div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-box"><div class="stat-label">Credit limit</div><div class="stat-val">${fmt(card.limit)}</div></div>
+          <div class="stat-box"><div class="stat-label">Utilisation</div><div class="stat-val">${used.toFixed(0)}%</div></div>
+          <div class="stat-box"><div class="stat-label">Annual interest</div><div class="stat-val">${fmt(mi(card)*12)}</div></div>
+        </div>
+        <div class="update-row">
+          <label>Update balance (£)</label>
+          <input type="number" id="nb-${i}" value="${card.balance.toFixed(2)}" step="0.01">
+          <button class="btn btn-primary btn-sm" onclick="updateBalance(${i})">Update</button>
+        </div>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+function toggleCard(i) { document.getElementById('cb-' + i).classList.toggle('hidden'); }
+
+function updateBalance(i) {
+  const val = parseFloat(document.getElementById('nb-' + i).value);
+  if (isNaN(val)) return;
+  const old = data.cards[i].balance;
+  data.cards[i].balance = Math.max(0, val);
+  if (val < old) {
+    data.history.unshift({ cardId: data.cards[i].id, cardName: data.cards[i].name, number: data.cards[i].number, amount: +(old - val).toFixed(2), type: 'payment', date: new Date().toISOString().split('T')[0], note: 'Balance update' });
+  }
+  save(data);
+  renderSummary(); renderCards(); renderPayoff();
+}
+
+function renderPayoff() {
+  const extra = parseFloat(document.getElementById('extra-payment').value) || 0;
+  const sim = data.cards.map(c => ({...c}));
+  const totalMin = sim.reduce((s, c) => s + c.minPayment, 0);
+  const budget = totalMin + extra;
+  let totalInt = 0, months = 0;
+
+  for (let m = 0; m < 360; m++) {
+    if (sim.every(c => c.balance <= 0)) break;
+    months = m + 1;
+    sim.forEach(c => { if (c.balance > 0) { const int = c.balance * (c.apr / 100 / 12); totalInt += int; c.balance += int; } });
+    const order = strategy === 'avalanche'
+      ? [...sim].filter(c => c.balance > 0).sort((a, b) => b.apr - a.apr)
+      : [...sim].filter(c => c.balance > 0).sort((a, b) => a.balance - b.balance);
+    let rem = budget;
+    sim.forEach(c => { if (c.balance > 0 && rem > 0) { const p = Math.min(c.minPayment, c.balance); c.balance = Math.max(0, c.balance - p); rem -= p; } });
+    order.forEach(c => { const r = sim.find(x => x.id === c.id); if (r && r.balance > 0 && rem > 0) { const p = Math.min(rem, r.balance); r.balance = Math.max(0, r.balance - p); rem -= p; } });
+  }
+
+  const sorted = strategy === 'avalanche'
+    ? [...data.cards].sort((a, b) => b.apr - a.apr)
+    : [...data.cards].sort((a, b) => a.balance - b.balance);
+  const rc = ['r1', 'r2', 'r3'];
+
+  document.getElementById('payoff-list').innerHTML = sorted.map((card, i) => `
+    <div class="payoff-card">
+      <div style="display:flex;align-items:center">
+        <span class="rank-badge ${rc[i] || 'r3'}">${i + 1}</span>
+        <div>
+          <div style="font-size:14px;font-weight:500">${card.name} ···· ${card.number}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${card.apr}% APR · ${fmt(card.balance)} balance</div>
+        </div>
+      </div>
+      <div class="pg-grid">
+        <div class="pg-stat"><div class="pg-label">Monthly interest</div><div class="pg-val">${fmt(mi(card))}</div></div>
+        <div class="pg-stat"><div class="pg-label">Annual interest</div><div class="pg-val">${fmt(mi(card)*12)}</div></div>
+        <div class="pg-stat"><div class="pg-label">Min payment</div><div class="pg-val">${fmt(card.minPayment)}</div></div>
+      </div>
+    </div>`).join('');
+
+  const yrs = Math.floor(months / 12), mos = months % 12;
+  document.getElementById('payoff-summary').innerHTML = `
+    <div class="payoff-summary-title">Payoff projection</div>
+    <div class="proj-grid">
+      <div><div class="proj-label">Debt free in</div><div class="proj-val">${yrs > 0 ? yrs + 'y ' : ''}${mos}m</div></div>
+      <div><div class="proj-label">Total interest</div><div class="proj-val">${fmt(totalInt)}</div></div>
+      <div><div class="proj-label">Monthly total</div><div class="proj-val">${fmt(totalMin + extra)}</div></div>
+    </div>`;
+}
+
+function renderHistory() {
+  const fc = document.getElementById('filter-card').value;
+  const ft = document.getElementById('filter-type').value;
+  let entries = [...data.history];
+  if (fc !== 'all') entries = entries.filter(e => e.cardId === fc);
+  if (ft !== 'all') entries = entries.filter(e => e.type === ft);
+  const list = document.getElementById('history-list');
+  if (!entries.length) { list.innerHTML = '<div class="empty-state">No transactions logged yet.</div>'; return; }
+  list.innerHTML = entries.map(e => `
+    <div class="log-entry">
+      <div>
+        <div class="log-note">${e.note || 'Payment'}</div>
+        <div class="log-card">${e.cardName} ···· ${e.number} · <span class="log-date">${e.date}</span></div>
+      </div>
+      <div class="log-amount" style="color:${e.type==='payment'?'var(--ok)':'var(--danger)'}">${e.type==='payment'?'-':'+'}${fmt(e.amount)}</div>
+    </div>`).join('');
+}
+
+function populateSelects() {
+  const sel = document.getElementById('filter-card');
+  sel.innerHTML = '<option value="all">All cards</option>';
+  data.cards.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name + ' ···· ' + c.number; sel.appendChild(o); });
+}
+
+function openModal() {
+  const sel = document.getElementById('modal-card');
+  sel.innerHTML = '';
+  data.cards.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name + ' ···· ' + c.number; sel.appendChild(o); });
+  document.getElementById('modal-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('modal-amount').value = '';
+  document.getElementById('modal-note').value = '';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+function savePayment() {
+  const cardId = document.getElementById('modal-card').value;
+  const amount = parseFloat(document.getElementById('modal-amount').value);
+  const date = document.getElementById('modal-date').value;
+  const note = document.getElementById('modal-note').value;
+  if (!amount || amount <= 0) return;
+  const card = data.cards.find(c => c.id === cardId);
+  if (!card) return;
+  card.balance = Math.max(0, card.balance - amount);
+  data.history.unshift({ cardId, cardName: card.name, number: card.number, amount, type: 'payment', date, note });
+  save(data);
+  closeModal();
+  renderSummary(); renderCards(); renderPayoff(); renderHistory();
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('section-' + name).classList.add('active');
+  if (name === 'payoff') renderPayoff();
+  if (name === 'history') renderHistory();
+}
+
+function setStrategy(s, btn) {
+  strategy = s;
+  document.querySelectorAll('.strat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPayoff();
+}
+
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+renderSummary(); renderCards(); populateSelects();
+</script>
+</body>
+</html>
