@@ -44,6 +44,8 @@
   .tab.active { background: var(--text); color: var(--bg); border-color: transparent; }
   .section { display: none; }
   .section.active { display: block; }
+
+  /* Overview */
   .card-list { display: flex; flex-direction: column; gap: 10px; }
   .card { background: var(--surface); border-radius: var(--radius); border: 0.5px solid var(--border); overflow: hidden; }
   .card-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.1rem; cursor: pointer; user-select: none; }
@@ -61,7 +63,7 @@
   .bar-wrap { margin-top: 0.85rem; }
   .bar-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 4px; }
   .bar-bg { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+  .bar-fill { height: 100%; border-radius: 3px; }
   .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 0.85rem; }
   .stat-box { background: var(--surface2); border-radius: var(--radius-sm); padding: 0.6rem 0.75rem; }
   .stat-label { font-size: 11px; color: var(--text2); }
@@ -69,6 +71,36 @@
   .update-row { display: flex; align-items: center; gap: 8px; margin-top: 1rem; padding-top: 0.85rem; border-top: 0.5px solid var(--border); flex-wrap: wrap; }
   .update-row label { font-size: 12px; color: var(--text2); }
   .update-row input { flex: 1; min-width: 100px; padding: 6px 10px; font-size: 13px; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); background: var(--surface); color: var(--text); font-family: inherit; }
+
+  /* Allocator */
+  .alloc-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 1.25rem; padding: 1rem 1.25rem; background: var(--surface); border-radius: var(--radius); border: 0.5px solid var(--border); }
+  .alloc-controls label { font-size: 13px; color: var(--text2); white-space: nowrap; }
+  .alloc-controls input { width: 110px; padding: 6px 10px; font-size: 15px; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); background: var(--surface); color: var(--text); font-family: inherit; }
+  .pill-btn { padding: 6px 14px; border-radius: 20px; border: 0.5px solid var(--border2); font-size: 12px; cursor: pointer; background: transparent; color: var(--text2); font-family: inherit; }
+  .pill-btn:hover { background: var(--surface2); }
+  .alloc-summary { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-bottom: 1.25rem; }
+  .track-wrap { margin-bottom: 1.25rem; }
+  .track-label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .track-name { font-size: 13px; font-weight: 500; }
+  .track-meta { font-size: 11px; color: var(--text2); }
+  .track-bar { position: relative; height: 38px; background: var(--surface2); border-radius: var(--radius-sm); overflow: hidden; cursor: pointer; user-select: none; }
+  .track-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: var(--radius-sm); }
+  .track-min-line { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.4); pointer-events: none; z-index: 1; }
+  .track-handle { position: absolute; right: -1px; top: 50%; transform: translateY(-50%); width: 14px; height: 28px; background: var(--surface); border: 0.5px solid var(--border2); border-radius: 4px; cursor: grab; z-index: 2; display: flex; align-items: center; justify-content: center; }
+  .track-handle:active { cursor: grabbing; }
+  .handle-lines { display: flex; flex-direction: column; gap: 3px; }
+  .handle-line { width: 4px; height: 1px; background: var(--text3); border-radius: 1px; }
+  .track-amount { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); font-size: 12px; font-weight: 500; color: var(--text); pointer-events: none; white-space: nowrap; }
+  .track-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-top: 6px; }
+  .ts { background: var(--surface2); border-radius: var(--radius-sm); padding: 5px 8px; }
+  .ts-label { font-size: 11px; color: var(--text2); }
+  .ts-val { font-size: 12px; font-weight: 500; color: var(--text); margin-top: 1px; }
+  .unalloc-row { margin-top: 0.5rem; }
+  .unalloc-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  .unalloc-bg { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .unalloc-fill { height: 100%; border-radius: 3px; transition: width 0.08s; }
+
+  /* Payoff */
   .scenario-controls { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.25rem; }
   .ctrl-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
   .ctrl-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -80,9 +112,7 @@
   .hl-card { background: var(--surface2); border-radius: var(--radius-sm); padding: 0.85rem 1rem; }
   .hl-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
   .hl-val { font-size: 20px; font-weight: 500; }
-  .hl-val.good { color: var(--ok); }
-  .hl-val.bad { color: var(--danger); }
-  .hl-val.warn { color: var(--warn); }
+  .hl-val.good { color: var(--ok); } .hl-val.bad { color: var(--danger); } .hl-val.warn { color: var(--warn); }
   .hl-sub { font-size: 11px; color: var(--text2); margin-top: 3px; }
   .phase-section-title { font-size: 13px; font-weight: 500; margin-bottom: 0.75rem; }
   .phase { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 10px; position: relative; overflow: hidden; }
@@ -112,6 +142,8 @@
   .vs-divider { font-size: 12px; color: var(--text2); text-align: center; }
   .vs-save { text-align: center; padding: 0.65rem 1rem; background: var(--surface); border-radius: var(--radius-sm); border: 0.5px solid var(--border); font-size: 12px; color: var(--text2); margin-top: 0.75rem; line-height: 1.6; }
   .vs-save strong { font-weight: 500; }
+
+  /* History */
   .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 0.85rem; }
   .filter-row select { padding: 6px 10px; font-size: 13px; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); background: var(--surface); color: var(--text); font-family: inherit; }
   .history-list { background: var(--surface); border-radius: var(--radius); border: 0.5px solid var(--border); overflow: hidden; }
@@ -122,6 +154,8 @@
   .log-date { font-size: 11px; color: var(--text3); }
   .log-amount { font-weight: 500; font-size: 14px; }
   .empty-state { padding: 2.5rem; text-align: center; font-size: 13px; color: var(--text2); }
+
+  /* Modal */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
   .modal-overlay.open { display: flex; }
   .modal { background: var(--surface); border-radius: var(--radius); padding: 1.5rem; width: 100%; max-width: 340px; border: 0.5px solid var(--border2); }
@@ -147,12 +181,28 @@
   <div class="summary-grid" id="summary-grid"></div>
   <div class="tabs">
     <button class="tab active" onclick="switchTab('overview',this)">Overview</button>
+    <button class="tab" onclick="switchTab('allocator',this)">Allocator</button>
     <button class="tab" onclick="switchTab('payoff',this)">Payoff plan</button>
     <button class="tab" onclick="switchTab('history',this)">History</button>
   </div>
 
   <div id="section-overview" class="section active">
     <div class="card-list" id="card-list"></div>
+  </div>
+
+  <div id="section-allocator" class="section">
+    <div class="alloc-controls">
+      <label>Monthly budget (£)</label>
+      <input type="number" id="budget-input" value="400" min="0" step="10" oninput="setBudget(this.value)">
+      <button class="pill-btn" onclick="setMinsOnly()">Set to minimums</button>
+      <button class="pill-btn" onclick="resetEqual()">Split equally</button>
+    </div>
+    <div class="alloc-summary" id="alloc-summary"></div>
+    <div id="tracks"></div>
+    <div class="unalloc-row">
+      <div class="unalloc-labels" id="unalloc-labels"></div>
+      <div class="unalloc-bg"><div class="unalloc-fill" id="unalloc-fill"></div></div>
+    </div>
   </div>
 
   <div id="section-payoff" class="section">
@@ -204,24 +254,26 @@
 
 <script>
 const STORAGE_KEY='debt_tracker_v2';
-const defaultCards=[
-  {id:'ll7024',name:'Lloyds Bank',number:'7024',balance:3036.01,limit:6700,apr:26.94,minPayment:61,dueDay:20},
-  {id:'ms2384',name:'M&S Bank',number:'2384',balance:1049.32,limit:1300,apr:24.9,minPayment:25,dueDay:15},
-  {id:'ll2250',name:'Lloyds Bank',number:'2250',balance:5122.84,limit:6200,apr:12.38,minPayment:103,dueDay:25},
+const CARD_DEFS=[
+  {id:'ll7024',name:'Lloyds Bank',number:'7024',balance:3036.01,limit:6700,apr:26.94,minPayment:61,dueDay:20,color:'#c0392b',bg:'#fce8e8',text:'#a32d2d'},
+  {id:'ms2384',name:'M&S Bank',number:'2384',balance:1049.32,limit:1300,apr:24.9,minPayment:25,dueDay:15,color:'#b8860b',bg:'#faeeda',text:'#854f0b'},
+  {id:'ll2250',name:'Lloyds Bank',number:'2250',balance:5122.84,limit:6200,apr:12.38,minPayment:103,dueDay:25,color:'#1a7a4a',bg:'#eaf3de',text:'#3b6d11'},
 ];
-const CARD_COLORS=[
-  {color:'#c0392b',fill:'#fce8e8',text:'#a32d2d'},
-  {color:'#b8860b',fill:'#faeeda',text:'#854f0b'},
-  {color:'#1a7a4a',fill:'#eaf3de',text:'#3b6d11'},
-];
-function load(){try{const s=localStorage.getItem(STORAGE_KEY);return s?JSON.parse(s):{cards:defaultCards.map(c=>({...c})),history:[]};}catch(e){return{cards:defaultCards.map(c=>({...c})),history:[]};}}
+
+function load(){try{const s=localStorage.getItem(STORAGE_KEY);return s?JSON.parse(s):{cards:CARD_DEFS.map(c=>({...c})),history:[]};}catch(e){return{cards:CARD_DEFS.map(c=>({...c})),history:[]};}}
 function save(d){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(d));}catch(e){}}
-let data=load(),strat='avalanche',extra=200;
+
+let data=load();
+let strat='avalanche',extra=200;
+let allocBudget=400;
+let allocs=CARD_DEFS.map(c=>c.minPayment);
+
 function fmt(n){return'£'+Math.abs(n).toLocaleString('en-GB',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function fmtD(n){return'£'+Math.abs(n).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function aprClass(a){return a>=24?'apr-high':a>=16?'apr-mid':'apr-low';}
 function mi(c){return c.balance*(c.apr/100/12);}
 
+/* ── Overview ── */
 function renderSummary(){
   const total=data.cards.reduce((s,c)=>s+c.balance,0);
   const tInt=data.cards.reduce((s,c)=>s+mi(c),0);
@@ -271,9 +323,150 @@ function updateBalance(i){
   const val=parseFloat(document.getElementById('nb-'+i).value);if(isNaN(val))return;
   const old=data.cards[i].balance;data.cards[i].balance=Math.max(0,val);
   if(val<old)data.history.unshift({cardId:data.cards[i].id,cardName:data.cards[i].name,number:data.cards[i].number,amount:+(old-val).toFixed(2),type:'payment',date:new Date().toISOString().split('T')[0],note:'Balance update'});
-  save(data);renderSummary();renderCards();renderPayoff();
+  save(data);renderSummary();renderCards();
 }
 
+/* ── Allocator ── */
+function mthsToPayoff(balance,apr,monthly){
+  if(monthly<=0)return Infinity;
+  const r=apr/100/12;
+  if(r===0)return Math.ceil(balance/monthly);
+  if(monthly<=balance*r)return Infinity;
+  return Math.ceil(-Math.log(1-balance*r/monthly)/Math.log(1+r));
+}
+function intTotal(balance,apr,monthly){
+  const m=mthsToPayoff(balance,apr,monthly);
+  return m===Infinity?Infinity:Math.max(0,monthly*m-balance);
+}
+
+function setBudget(v){
+  allocBudget=Math.max(0,parseFloat(v)||0);
+  const totalMin=data.cards.reduce((s,c)=>s+c.minPayment,0);
+  if(allocBudget<totalMin){allocs=data.cards.map(c=>c.minPayment);}
+  else{
+    const cur=allocs.reduce((s,a)=>s+a,0);
+    if(cur>0){const scale=allocBudget/cur;allocs=allocs.map((a,i)=>Math.max(data.cards[i].minPayment,Math.round(a*scale)));}
+    clampAllocs();
+  }
+  renderAllocator();
+}
+
+function clampAllocs(){
+  let total=allocs.reduce((s,a)=>s+a,0);
+  for(let i=data.cards.length-1;i>=0&&total>allocBudget;i--){
+    const cut=Math.min(allocs[i]-data.cards[i].minPayment,total-allocBudget);
+    allocs[i]-=cut;total-=cut;
+  }
+}
+
+function setMinsOnly(){
+  const totalMin=data.cards.reduce((s,c)=>s+c.minPayment,0);
+  allocBudget=totalMin;
+  document.getElementById('budget-input').value=totalMin;
+  allocs=data.cards.map(c=>c.minPayment);
+  renderAllocator();
+}
+
+function resetEqual(){
+  const totalMin=data.cards.reduce((s,c)=>s+c.minPayment,0);
+  const extra=Math.max(0,allocBudget-totalMin);
+  const perCard=Math.floor(extra/data.cards.length);
+  allocs=data.cards.map(c=>c.minPayment+perCard);
+  const leftover=allocBudget-allocs.reduce((s,a)=>s+a,0);
+  if(leftover>0)allocs[0]+=leftover;
+  renderAllocator();
+}
+
+function renderAllocator(){
+  const totalInt=data.cards.reduce((s,c,i)=>s+intTotal(c.balance,c.apr,allocs[i]),0);
+  const maxM=Math.max(...data.cards.map((c,i)=>mthsToPayoff(c.balance,c.apr,allocs[i])));
+  const totalAlloc=allocs.reduce((s,a)=>s+a,0);
+  const unalloc=Math.max(0,allocBudget-totalAlloc);
+
+  document.getElementById('alloc-summary').innerHTML=`
+    <div class="metric"><div class="metric-label">Monthly budget</div><div class="metric-value">${fmt(allocBudget)}</div></div>
+    <div class="metric"><div class="metric-label">Total interest</div><div class="metric-value danger">${totalInt===Infinity?'n/a':fmt(totalInt)}</div></div>
+    <div class="metric"><div class="metric-label">Debt free</div><div class="metric-value ${maxM===Infinity?'danger':'ok'}">${maxM===Infinity?'never':Math.floor(maxM/12)+'y '+maxM%12+'m'}</div></div>`;
+
+  const tracksEl=document.getElementById('tracks');tracksEl.innerHTML='';
+  data.cards.forEach((card,i)=>{
+    const def=CARD_DEFS.find(d=>d.id===card.id)||CARD_DEFS[i];
+    const alloc=allocs[i];
+    const pct=allocBudget>0?Math.min(100,alloc/allocBudget*100):0;
+    const minPct=allocBudget>0?Math.min(100,card.minPayment/allocBudget*100):0;
+    const months=mthsToPayoff(card.balance,card.apr,alloc);
+    const intPd=intTotal(card.balance,card.apr,alloc);
+    const extraAmt=alloc-card.minPayment;
+
+    const wrap=document.createElement('div');wrap.className='track-wrap';
+    wrap.innerHTML=`
+      <div class="track-label">
+        <div><span class="track-name">${card.name} ···· ${card.number}</span> <span style="font-size:11px;padding:2px 7px;border-radius:20px;background:${def.bg};color:${def.color};margin-left:6px">${card.apr}% APR</span></div>
+        <div class="track-meta">${fmt(card.balance)} balance</div>
+      </div>
+      <div class="track-bar" id="abar-${i}">
+        <div class="track-fill" id="afill-${i}" style="width:${pct}%;background:${def.color}"></div>
+        <div class="track-min-line" style="left:${minPct}%"></div>
+        <div class="track-amount" id="aamt-${i}">${fmtD(alloc)}/mo</div>
+        <div class="track-handle" id="ahandle-${i}">
+          <div class="handle-lines"><div class="handle-line"></div><div class="handle-line"></div><div class="handle-line"></div></div>
+        </div>
+      </div>
+      <div class="track-stats">
+        <div class="ts"><div class="ts-label">Minimum</div><div class="ts-val">${fmt(card.minPayment)}</div></div>
+        <div class="ts"><div class="ts-label">Extra</div><div class="ts-val" style="color:${extraAmt>0?'var(--ok)':'var(--text2)'}">${extraAmt>0?'+'+fmt(extraAmt):'none'}</div></div>
+        <div class="ts"><div class="ts-label">Paid off</div><div class="ts-val" style="color:${months===Infinity?'var(--danger)':'var(--text)'}">${months===Infinity?'never':months<12?months+'m':Math.floor(months/12)+'y '+months%12+'m'}</div></div>
+      </div>`;
+    tracksEl.appendChild(wrap);
+    setupDrag(i,wrap);
+  });
+
+  const upct=allocBudget>0?Math.min(100,unalloc/allocBudget*100):0;
+  const ucol=unalloc>50?'var(--warn)':unalloc>0?'var(--warn)':'var(--ok)';
+  document.getElementById('unalloc-labels').innerHTML=`<span>${unalloc>0?fmt(unalloc)+' unallocated':'Fully allocated'}</span><span style="color:${ucol}">${Math.round(upct)}% remaining</span>`;
+  document.getElementById('unalloc-fill').style.cssText=`width:${upct}%;background:${ucol}`;
+}
+
+function setupDrag(idx,wrap){
+  const bar=wrap.querySelector('#abar-'+idx);
+  const fill=wrap.querySelector('#afill-'+idx);
+  const handle=wrap.querySelector('#ahandle-'+idx);
+  const amtEl=wrap.querySelector('#aamt-'+idx);
+  let dragging=false;
+
+  function getNewAlloc(clientX){
+    const rect=bar.getBoundingClientRect();
+    const pct=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));
+    const raw=Math.round(pct*allocBudget);
+    return Math.max(data.cards[idx].minPayment,Math.min(allocBudget,raw));
+  }
+
+  function apply(clientX){
+    const newVal=getNewAlloc(clientX);
+    const diff=newVal-allocs[idx];
+    allocs[idx]=newVal;
+    if(diff>0){
+      let excess=allocs.reduce((s,a)=>s+a,0)-allocBudget;
+      for(let j=data.cards.length-1;j>=0&&excess>0;j--){
+        if(j===idx)continue;
+        const cut=Math.min(allocs[j]-data.cards[j].minPayment,excess);
+        allocs[j]-=cut;excess-=cut;
+      }
+    }
+    renderAllocator();
+  }
+
+  handle.addEventListener('mousedown',e=>{dragging=true;e.preventDefault();});
+  bar.addEventListener('mousedown',e=>{dragging=true;apply(e.clientX);e.preventDefault();});
+  window.addEventListener('mousemove',e=>{if(dragging)apply(e.clientX);});
+  window.addEventListener('mouseup',()=>{dragging=false;});
+  handle.addEventListener('touchstart',e=>{dragging=true;e.preventDefault();},{passive:false});
+  bar.addEventListener('touchstart',e=>{dragging=true;apply(e.touches[0].clientX);e.preventDefault();},{passive:false});
+  window.addEventListener('touchmove',e=>{if(dragging)apply(e.touches[0].clientX);},{passive:true});
+  window.addEventListener('touchend',()=>{dragging=false;});
+}
+
+/* ── Payoff ── */
 function simulate(extraAmt,strategy){
   const sim=data.cards.map(c=>({...c}));
   const totalMin=sim.reduce((s,c)=>s+c.minPayment,0);
@@ -285,12 +478,12 @@ function simulate(extraAmt,strategy){
   }
   currentTarget=getTarget();
   for(let m=0;m<360;m++){
-    const alive=sim.filter(c=>c.balance>0.01);if(!alive.length)break;
+    if(sim.every(c=>c.balance<=0.01))break;
     months=m+1;
     sim.forEach(c=>{if(c.balance>0.01){const int=c.balance*(c.apr/100/12);totalInt+=int;c.balance+=int;}});
     let rem=budget;
     sim.forEach(c=>{if(c.balance>0.01&&rem>0){const p=Math.min(c.minPayment,c.balance);c.balance=Math.max(0,c.balance-p);rem-=p;}});
-    const t=getTarget();if(t&&rem>0){const r=sim.find(x=>x.id===t.id);if(r&&r.balance>0.01){const p=Math.min(rem,r.balance);r.balance=Math.max(0,r.balance-p);}}
+    const t=getTarget();if(t&&rem>0){const r=sim.find(x=>x.id===t.id);if(r&&r.balance>0.01){r.balance=Math.max(0,r.balance-Math.min(rem,r.balance));}}
     const newTarget=getTarget();
     if((currentTarget?currentTarget.id:null)!==(newTarget?newTarget.id:null)){
       if(currentTarget){const orig=data.cards.find(c=>c.id===currentTarget.id);phases.push({card:orig,startMonth:phaseStart,endMonth:m,duration:m-phaseStart,intPaid:totalInt-phaseIntStart});}
@@ -306,13 +499,20 @@ function renderPayoff(){
   const yrs=Math.floor(res.months/12),mos=res.months%12;
   const yrsMin=Math.floor(resMin.months/12),mosMin=resMin.months%12;
   const saved=resMin.totalInt-res.totalInt,monthsSaved=resMin.months-res.months;
+
   document.getElementById('headline-grid').innerHTML=`
     <div class="hl-card"><div class="hl-label">Debt free</div><div class="hl-val good">${yrs>0?yrs+'y ':''} ${mos}m</div><div class="hl-sub">${monthsSaved>0?monthsSaved+' months sooner':'at minimum payments'}</div></div>
     <div class="hl-card"><div class="hl-label">Total interest</div><div class="hl-val bad">${fmt(res.totalInt)}</div><div class="hl-sub">${saved>0?'saving '+fmt(saved):''}</div></div>
     <div class="hl-card"><div class="hl-label">Monthly outgoing</div><div class="hl-val warn">${fmt(res.budget)}</div><div class="hl-sub">${fmt(res.totalMin)} mins + £${extra} extra</div></div>`;
+
+  const COLS=[
+    {color:'#c0392b',fill:'#fce8e8',text:'#a32d2d'},
+    {color:'#b8860b',fill:'#faeeda',text:'#854f0b'},
+    {color:'#1a7a4a',fill:'#eaf3de',text:'#3b6d11'},
+  ];
   let html='';
   res.phases.forEach((phase,i)=>{
-    const c=phase.card,col=CARD_COLORS[i]||CARD_COLORS[2];
+    const c=phase.card,col=COLS[i]||COLS[2];
     const sd=new Date();sd.setMonth(sd.getMonth()+phase.startMonth);
     const ed=new Date();ed.setMonth(ed.getMonth()+phase.endMonth);
     const ss=sd.toLocaleDateString('en-GB',{month:'short',year:'numeric'});
@@ -357,6 +557,7 @@ function renderPayoff(){
 function onSlider(v){extra=parseInt(v);document.getElementById('extra-disp').textContent='£'+extra;renderPayoff();}
 function setStrat(s,btn){strat=s;document.querySelectorAll('.strat-pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderPayoff();}
 
+/* ── History ── */
 function renderHistory(){
   const fc=document.getElementById('filter-card').value,ft=document.getElementById('filter-type').value;
   let entries=[...data.history];
@@ -372,6 +573,7 @@ function populateSelects(){
   data.cards.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name+' ···· '+c.number;sel.appendChild(o);});
 }
 
+/* ── Modal ── */
 function openModal(){
   const sel=document.getElementById('modal-card');sel.innerHTML='';
   data.cards.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name+' ···· '+c.number;sel.appendChild(o);});
@@ -388,15 +590,18 @@ function savePayment(){
   const card=data.cards.find(c=>c.id===cardId);if(!card)return;
   card.balance=Math.max(0,card.balance-amount);
   data.history.unshift({cardId,cardName:card.name,number:card.number,amount,type:'payment',date,note});
-  save(data);closeModal();renderSummary();renderCards();renderPayoff();renderHistory();
+  save(data);closeModal();renderSummary();renderCards();
 }
 
 function switchTab(name,btn){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   btn.classList.add('active');document.getElementById('section-'+name).classList.add('active');
-  if(name==='payoff')renderPayoff();if(name==='history')renderHistory();
+  if(name==='allocator')renderAllocator();
+  if(name==='payoff')renderPayoff();
+  if(name==='history')renderHistory();
 }
+
 document.getElementById('modal-overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
 renderSummary();renderCards();populateSelects();
 </script>
