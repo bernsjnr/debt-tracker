@@ -72,33 +72,51 @@
   .update-row label { font-size: 12px; color: var(--text2); }
   .update-row input { flex: 1; min-width: 100px; padding: 6px 10px; font-size: 13px; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); background: var(--surface); color: var(--text); font-family: inherit; }
 
-  /* Allocator */
-  .alloc-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 1.25rem; padding: 1rem 1.25rem; background: var(--surface); border-radius: var(--radius); border: 0.5px solid var(--border); }
-  .alloc-controls label { font-size: 13px; color: var(--text2); white-space: nowrap; }
-  .alloc-controls input { width: 110px; padding: 6px 10px; font-size: 15px; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); background: var(--surface); color: var(--text); font-family: inherit; }
-  .pill-btn { padding: 6px 14px; border-radius: 20px; border: 0.5px solid var(--border2); font-size: 12px; cursor: pointer; background: transparent; color: var(--text2); font-family: inherit; }
-  .pill-btn:hover { background: var(--surface2); }
-  .alloc-summary { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-bottom: 1.25rem; }
-  .track-wrap { margin-bottom: 1.25rem; }
-  .track-label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
-  .track-name { font-size: 13px; font-weight: 500; }
-  .track-meta { font-size: 11px; color: var(--text2); }
-  .track-bar { position: relative; height: 38px; background: var(--surface2); border-radius: var(--radius-sm); cursor: pointer; user-select: none; touch-action: none; overflow: hidden; }
-  .track-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: var(--radius-sm); }
-  .track-min-line { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.4); pointer-events: none; z-index: 1; }
-  .track-handle { position: absolute; right: -1px; top: 50%; transform: translateY(-50%); width: 14px; height: 28px; background: var(--surface); border: 0.5px solid var(--border2); border-radius: 4px; cursor: grab; z-index: 2; display: flex; align-items: center; justify-content: center; touch-action: none; }
-  .track-handle:active { cursor: grabbing; }
-  .handle-lines { display: flex; flex-direction: column; gap: 3px; }
-  .handle-line { width: 4px; height: 1px; background: var(--text3); border-radius: 1px; }
-  .track-amount { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); font-size: 12px; font-weight: 500; color: var(--text); pointer-events: none; white-space: nowrap; }
-  .track-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-top: 6px; }
-  .ts { background: var(--surface2); border-radius: var(--radius-sm); padding: 5px 8px; }
-  .ts-label { font-size: 11px; color: var(--text2); }
-  .ts-val { font-size: 12px; font-weight: 500; color: var(--text); margin-top: 1px; }
-  .unalloc-row { margin-top: 0.5rem; }
-  .unalloc-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 4px; }
-  .unalloc-bg { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
-  .unalloc-fill { height: 100%; border-radius: 3px; transition: width 0.08s; }
+  /* ── Allocator (income-allocator style) ── */
+  .alloc-outer { background: #1c1c1c; border-radius: var(--radius); padding: 1.25rem 1.25rem 1rem; }
+  .alloc-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 10px; }
+  .alloc-budget-block { }
+  .alloc-budget-label { font-size: 11px; color: #666; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 4px; }
+  .alloc-budget-wrap { display: flex; align-items: baseline; gap: 2px; }
+  .alloc-budget-sym { font-size: 20px; color: #888; }
+  .alloc-budget-input { background: transparent; border: none; font-size: 32px; font-weight: 500; color: #fff; width: 150px; font-family: inherit; outline: none; }
+  .alloc-budget-input::-webkit-inner-spin-button, .alloc-budget-input::-webkit-outer-spin-button { display: none; }
+  .alloc-quick-btns { display: flex; gap: 6px; align-items: center; }
+  .alloc-qbtn { padding: 5px 12px; border-radius: 20px; border: 0.5px solid #3a3a3a; font-size: 11px; cursor: pointer; background: transparent; color: #888; font-family: inherit; }
+  .alloc-qbtn:hover { background: #2a2a2a; color: #ccc; }
+  .alloc-total-pill { background: #2a2a2a; border-radius: 20px; padding: 4px 12px; font-size: 12px; color: #666; display: flex; align-items: center; gap: 6px; }
+  .alloc-total-pill.ok { color: #3ab870; }
+  .alloc-total-pill.over { color: #e05a4a; }
+
+  .alloc-slot { margin-bottom: 0.1rem; }
+  .alloc-slot-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .alloc-slot-left { display: flex; align-items: center; gap: 10px; }
+  .alloc-slot-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .alloc-slot-icon svg { width: 18px; height: 18px; }
+  .alloc-slot-name { font-size: 14px; font-weight: 500; color: #e8e8e8; }
+  .alloc-slot-sub { font-size: 11px; color: #555; margin-top: 2px; }
+  .alloc-slot-right { text-align: right; display: flex; align-items: baseline; gap: 10px; }
+  .alloc-slot-pct { font-size: 20px; font-weight: 500; }
+  .alloc-slot-amt { font-size: 14px; color: #666; }
+
+  .alloc-track-wrap { position: relative; height: 28px; display: flex; align-items: center; cursor: pointer; user-select: none; touch-action: none; margin-bottom: 10px; }
+  .alloc-track-bg { position: absolute; left: 11px; right: 11px; height: 6px; background: #2e2e2e; border-radius: 3px; }
+  .alloc-track-fill { position: absolute; left: 11px; height: 6px; border-radius: 3px; }
+  .alloc-track-min-marker { position: absolute; width: 2px; height: 12px; background: rgba(255,255,255,0.12); transform: translateX(-1px); }
+  .alloc-thumb { position: absolute; width: 26px; height: 26px; border-radius: 50%; transform: translateX(-50%); cursor: grab; touch-action: none; border: 3px solid #1c1c1c; z-index: 2; }
+  .alloc-thumb:active { cursor: grabbing; transform: translateX(-50%) scale(1.1); }
+
+  .alloc-slot-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-bottom: 14px; }
+  .ast { background: #242424; border-radius: 7px; padding: 6px 8px; }
+  .ast-label { font-size: 10px; color: #555; }
+  .ast-val { font-size: 12px; font-weight: 500; color: #bbb; margin-top: 2px; }
+  .alloc-divider { height: 0.5px; background: #2a2a2a; margin: 0.5rem 0 1rem; }
+
+  .alloc-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; }
+  .alloc-footer-label { font-size: 11px; color: #555; }
+  .alloc-footer-bar-wrap { flex: 1; margin: 0 12px; height: 4px; background: #2e2e2e; border-radius: 2px; overflow: hidden; }
+  .alloc-footer-bar { height: 100%; border-radius: 2px; transition: width 0.1s; }
+  .alloc-footer-val { font-size: 12px; font-weight: 500; }
 
   /* Payoff */
   .scenario-controls { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.25rem; }
@@ -191,18 +209,7 @@
   </div>
 
   <div id="section-allocator" class="section">
-    <div class="alloc-controls">
-      <label>Monthly budget (£)</label>
-      <input type="number" id="budget-input" value="400" min="0" step="10" oninput="setBudget(this.value)">
-      <button class="pill-btn" onclick="setMinsOnly()">Set to minimums</button>
-      <button class="pill-btn" onclick="resetEqual()">Split equally</button>
-    </div>
-    <div class="alloc-summary" id="alloc-summary"></div>
-    <div id="tracks"></div>
-    <div class="unalloc-row">
-      <div class="unalloc-labels" id="unalloc-labels"></div>
-      <div class="unalloc-bg"><div class="unalloc-fill" id="unalloc-fill"></div></div>
-    </div>
+    <div class="alloc-outer" id="alloc-outer"></div>
   </div>
 
   <div id="section-payoff" class="section">
@@ -255,9 +262,9 @@
 <script>
 const STORAGE_KEY='debt_tracker_v2';
 const CARD_DEFS=[
-  {id:'ll7024',name:'Lloyds Bank',number:'7024',balance:3036.01,limit:6700,apr:26.94,minPayment:61,dueDay:20,color:'#c0392b',bg:'#fce8e8',text:'#a32d2d'},
-  {id:'ms2384',name:'M&S Bank',number:'2384',balance:1049.32,limit:1300,apr:24.9,minPayment:25,dueDay:15,color:'#b8860b',bg:'#faeeda',text:'#854f0b'},
-  {id:'ll2250',name:'Lloyds Bank',number:'2250',balance:5122.84,limit:6200,apr:12.38,minPayment:103,dueDay:25,color:'#1a7a4a',bg:'#eaf3de',text:'#3b6d11'},
+  {id:'ll7024',name:'Lloyds Bank',number:'7024',balance:3036.01,limit:6700,apr:26.94,minPayment:61,dueDay:20,color:'#e05050',trackColor:'#c0392b',iconBg:'#3a1a1a'},
+  {id:'ms2384',name:'M&S Bank',number:'2384',balance:1049.32,limit:1300,apr:24.9,minPayment:25,dueDay:15,color:'#d4a030',trackColor:'#b8860b',iconBg:'#2e2510'},
+  {id:'ll2250',name:'Lloyds Bank',number:'2250',balance:5122.84,limit:6200,apr:12.38,minPayment:103,dueDay:25,color:'#4ac080',trackColor:'#1a7a4a',iconBg:'#0e2418'},
 ];
 
 function load(){try{const s=localStorage.getItem(STORAGE_KEY);return s?JSON.parse(s):{cards:CARD_DEFS.map(c=>({...c})),history:[]};}catch(e){return{cards:CARD_DEFS.map(c=>({...c})),history:[]};}}
@@ -265,7 +272,7 @@ function save(d){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(d));}catch(
 
 let data=load();
 let strat='avalanche',extra=200;
-let allocBudget=400;
+let allocBudget=500;
 let allocs=CARD_DEFS.map(c=>c.minPayment);
 
 function fmt(n){return'£'+Math.abs(n).toLocaleString('en-GB',{minimumFractionDigits:0,maximumFractionDigits:0});}
@@ -289,6 +296,7 @@ function renderSummary(){
 function renderCards(){
   const el=document.getElementById('card-list');el.innerHTML='';
   data.cards.forEach((card,i)=>{
+    const def=CARD_DEFS[i];
     const used=card.balance/card.limit*100,avail=card.limit-card.balance;
     const barC=used>80?'#c0392b':used>60?'#b8860b':'#1a7a4a';
     const d=document.createElement('div');d.className='card';
@@ -339,18 +347,6 @@ function intTotal(balance,apr,monthly){
   return m===Infinity?Infinity:Math.max(0,monthly*m-balance);
 }
 
-function setBudget(v){
-  allocBudget=Math.max(0,parseFloat(v)||0);
-  const totalMin=data.cards.reduce((s,c)=>s+c.minPayment,0);
-  if(allocBudget<totalMin){allocs=data.cards.map(c=>c.minPayment);}
-  else{
-    const cur=allocs.reduce((s,a)=>s+a,0);
-    if(cur>0){const scale=allocBudget/cur;allocs=allocs.map((a,i)=>Math.max(data.cards[i].minPayment,Math.round(a*scale)));}
-    clampAllocs();
-  }
-  renderAllocator();
-}
-
 function clampAllocs(){
   let total=allocs.reduce((s,a)=>s+a,0);
   for(let i=data.cards.length-1;i>=0&&total>allocBudget;i--){
@@ -359,87 +355,106 @@ function clampAllocs(){
   }
 }
 
-function setMinsOnly(){
-  const totalMin=data.cards.reduce((s,c)=>s+c.minPayment,0);
-  allocBudget=totalMin;
-  document.getElementById('budget-input').value=totalMin;
-  allocs=data.cards.map(c=>c.minPayment);
-  renderAllocator();
-}
-
-function resetEqual(){
-  const totalMin=data.cards.reduce((s,c)=>s+c.minPayment,0);
-  const extra=Math.max(0,allocBudget-totalMin);
-  const perCard=Math.floor(extra/data.cards.length);
-  allocs=data.cards.map(c=>c.minPayment+perCard);
-  const leftover=allocBudget-allocs.reduce((s,a)=>s+a,0);
-  if(leftover>0)allocs[0]+=leftover;
-  renderAllocator();
-}
-
 function renderAllocator(){
-  const totalInt=data.cards.reduce((s,c,i)=>s+intTotal(c.balance,c.apr,allocs[i]),0);
-  const maxM=Math.max(...data.cards.map((c,i)=>mthsToPayoff(c.balance,c.apr,allocs[i])));
+  const outer=document.getElementById('alloc-outer');
   const totalAlloc=allocs.reduce((s,a)=>s+a,0);
   const unalloc=Math.max(0,allocBudget-totalAlloc);
+  const maxM=Math.max(...data.cards.map((c,i)=>mthsToPayoff(c.balance,c.apr,allocs[i])));
+  const pillOk=totalAlloc<=allocBudget;
 
-  document.getElementById('alloc-summary').innerHTML=`
-    <div class="metric"><div class="metric-label">Monthly budget</div><div class="metric-value">${fmt(allocBudget)}</div></div>
-    <div class="metric"><div class="metric-label">Total interest</div><div class="metric-value danger">${totalInt===Infinity?'n/a':fmt(totalInt)}</div></div>
-    <div class="metric"><div class="metric-label">Debt free</div><div class="metric-value ${maxM===Infinity?'danger':'ok'}">${maxM===Infinity?'never':Math.floor(maxM/12)+'y '+maxM%12+'m'}</div></div>`;
+  outer.innerHTML=`
+    <div class="alloc-top">
+      <div class="alloc-budget-block">
+        <div class="alloc-budget-label">Monthly debt budget</div>
+        <div class="alloc-budget-wrap">
+          <span class="alloc-budget-sym">£</span>
+          <input class="alloc-budget-input" type="number" id="budget-input" value="${allocBudget}" min="0" step="10" oninput="onBudgetInput(this.value)">
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <div class="alloc-quick-btns">
+          <button class="alloc-qbtn" onclick="setMinsOnly()">Minimums only</button>
+          <button class="alloc-qbtn" onclick="resetEqual()">Split equally</button>
+        </div>
+        <div class="alloc-total-pill ${pillOk?'ok':'over'}">${pillOk?'&#10003;':''} ${fmt(totalAlloc)} allocated${unalloc>0?' · '+fmt(unalloc)+' free':''}</div>
+      </div>
+    </div>
+    <div id="alloc-slots"></div>
+    <div style="height:0.5px;background:#2a2a2a;margin:0.25rem 0 0.85rem"></div>
+    <div class="alloc-footer">
+      <span class="alloc-footer-label">Debt free in</span>
+      <div class="alloc-footer-bar-wrap"><div class="alloc-footer-bar" style="width:${Math.min(100,totalAlloc/Math.max(1,allocBudget)*100)}%;background:#4ac080"></div></div>
+      <span class="alloc-footer-val" style="color:${maxM===Infinity?'#e05050':'#4ac080'}">${maxM===Infinity?'never':Math.floor(maxM/12)+'y '+maxM%12+'m'}</span>
+    </div>`;
 
-  const tracksEl=document.getElementById('tracks');tracksEl.innerHTML='';
+  const slotsEl=document.getElementById('alloc-slots');
   data.cards.forEach((card,i)=>{
-    const def=CARD_DEFS.find(d=>d.id===card.id)||CARD_DEFS[i];
+    const def=CARD_DEFS[i];
     const alloc=allocs[i];
     const pct=allocBudget>0?Math.min(100,alloc/allocBudget*100):0;
     const minPct=allocBudget>0?Math.min(100,card.minPayment/allocBudget*100):0;
+    const thumbPct=pct;
     const months=mthsToPayoff(card.balance,card.apr,alloc);
     const intPd=intTotal(card.balance,card.apr,alloc);
     const extraAmt=alloc-card.minPayment;
+    const displayPct=Math.round(pct);
 
-    const wrap=document.createElement('div');wrap.className='track-wrap';
-    wrap.innerHTML=`
-      <div class="track-label">
-        <div><span class="track-name">${card.name} ···· ${card.number}</span> <span style="font-size:11px;padding:2px 7px;border-radius:20px;background:${def.bg};color:${def.color};margin-left:6px">${card.apr}% APR</span></div>
-        <div class="track-meta">${fmt(card.balance)} balance</div>
-      </div>
-      <div class="track-bar" id="abar-${i}">
-        <div class="track-fill" id="afill-${i}" style="width:${pct}%;background:${def.color}"></div>
-        <div class="track-min-line" style="left:${minPct}%"></div>
-        <div class="track-amount" id="aamt-${i}">${fmtD(alloc)}/mo</div>
-        <div class="track-handle" id="ahandle-${i}">
-          <div class="handle-lines"><div class="handle-line"></div><div class="handle-line"></div><div class="handle-line"></div></div>
+    const slot=document.createElement('div');
+    slot.className='alloc-slot';
+
+    const icons=[
+      `<svg viewBox="0 0 24 24" fill="none" stroke="${def.color}" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`,
+      `<svg viewBox="0 0 24 24" fill="none" stroke="${def.color}" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`,
+      `<svg viewBox="0 0 24 24" fill="none" stroke="${def.color}" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`,
+    ];
+
+    slot.innerHTML=`
+      <div class="alloc-slot-header">
+        <div class="alloc-slot-left">
+          <div class="alloc-slot-icon" style="background:${def.iconBg}">${icons[i]}</div>
+          <div>
+            <div class="alloc-slot-name">${card.name} ···· ${card.number}</div>
+            <div class="alloc-slot-sub">${card.apr}% APR · min ${fmt(card.minPayment)}/mo</div>
+          </div>
+        </div>
+        <div class="alloc-slot-right">
+          <span class="alloc-slot-pct" style="color:${def.color}">${displayPct}%</span>
+          <span class="alloc-slot-amt">${fmt(alloc)}</span>
         </div>
       </div>
-      <div class="track-stats">
-        <div class="ts"><div class="ts-label">Minimum</div><div class="ts-val">${fmt(card.minPayment)}</div></div>
-        <div class="ts"><div class="ts-label">Extra</div><div class="ts-val" style="color:${extraAmt>0?'var(--ok)':'var(--text2)'}">${extraAmt>0?'+'+fmt(extraAmt):'none'}</div></div>
-        <div class="ts"><div class="ts-label">Paid off</div><div class="ts-val" style="color:${months===Infinity?'var(--danger)':'var(--text)'}">${months===Infinity?'never':months<12?months+'m':Math.floor(months/12)+'y '+months%12+'m'}</div></div>
-      </div>`;
-    tracksEl.appendChild(wrap);
-    setupDrag(i,wrap);
-  });
+      <div class="alloc-track-wrap" id="atrack-${i}">
+        <div class="alloc-track-bg"></div>
+        <div class="alloc-track-fill" id="afill-${i}" style="width:calc(${pct}% - 11px + 13px);left:11px;background:${def.trackColor}"></div>
+        <div class="alloc-track-min-marker" id="amin-${i}" style="left:calc(${minPct}% * (100% - 22px) / 100% + 11px)"></div>
+        <div class="alloc-thumb" id="athumb-${i}" style="left:calc(${thumbPct}% * (100% - 22px) / 100% + 11px);background:${def.color}"></div>
+      </div>
+      <div class="alloc-slot-stats">
+        <div class="ast"><div class="ast-label">Extra this card</div><div class="ast-val" style="color:${extraAmt>0?def.color:'#555'}">${extraAmt>0?'+'+fmt(extraAmt):'none'}</div></div>
+        <div class="ast"><div class="ast-label">Total interest</div><div class="ast-val">${intPd===Infinity?'n/a':fmt(intPd)}</div></div>
+        <div class="ast"><div class="ast-label">Paid off</div><div class="ast-val">${months===Infinity?'never':months<12?months+'m':Math.floor(months/12)+'y '+months%12+'m'}</div></div>
+      </div>
+      ${i<data.cards.length-1?'<div style="height:0.5px;background:#2a2a2a;margin:0.1rem 0 0.9rem"></div>':''}`;
 
-  const upct=allocBudget>0?Math.min(100,unalloc/allocBudget*100):0;
-  const ucol=unalloc>50?'var(--warn)':unalloc>0?'var(--warn)':'var(--ok)';
-  document.getElementById('unalloc-labels').innerHTML=`<span>${unalloc>0?fmt(unalloc)+' unallocated':'Fully allocated'}</span><span style="color:${ucol}">${Math.round(upct)}% remaining</span>`;
-  document.getElementById('unalloc-fill').style.cssText=`width:${upct}%;background:${ucol}`;
+    slotsEl.appendChild(slot);
+    setupDrag(i, slot.querySelector('#atrack-'+i), slot.querySelector('#afill-'+i), slot.querySelector('#athumb-'+i));
+  });
 }
 
-function setupDrag(idx,wrap){
-  const bar=wrap.querySelector('#abar-'+idx);
-  const handle=wrap.querySelector('#ahandle-'+idx);
-
-  function clientXToAlloc(clientX){
-    const rect=bar.getBoundingClientRect();
-    const pct=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));
-    const raw=Math.round(pct*allocBudget);
+function setupDrag(idx, trackWrap, fill, thumb){
+  function pctToAlloc(pct){
+    const raw=Math.round(pct/100*allocBudget);
     return Math.max(data.cards[idx].minPayment,Math.min(allocBudget,raw));
   }
 
-  function apply(clientX){
-    const newVal=clientXToAlloc(clientX);
+  function clientXToAlloc(clientX){
+    const rect=trackWrap.getBoundingClientRect();
+    const usable=rect.width-22;
+    const x=clientX-rect.left-11;
+    const pct=Math.max(0,Math.min(100,x/usable*100));
+    return pctToAlloc(pct);
+  }
+
+  function applyAndRedistribute(newVal){
     const diff=newVal-allocs[idx];
     allocs[idx]=newVal;
     if(diff>0){
@@ -453,31 +468,58 @@ function setupDrag(idx,wrap){
     renderAllocator();
   }
 
-  handle.addEventListener('pointerdown',e=>{
-    handle.setPointerCapture(e.pointerId);
+  thumb.addEventListener('pointerdown',e=>{
+    thumb.setPointerCapture(e.pointerId);
     e.preventDefault();
   });
-  handle.addEventListener('pointermove',e=>{
-    if(!handle.hasPointerCapture(e.pointerId))return;
-    apply(e.clientX);
+  thumb.addEventListener('pointermove',e=>{
+    if(!thumb.hasPointerCapture(e.pointerId))return;
+    applyAndRedistribute(clientXToAlloc(e.clientX));
   });
-  handle.addEventListener('pointerup',e=>{
-    handle.releasePointerCapture(e.pointerId);
+  thumb.addEventListener('pointerup',e=>{
+    thumb.releasePointerCapture(e.pointerId);
   });
 
-  bar.addEventListener('pointerdown',e=>{
-    if(e.target===handle)return;
-    apply(e.clientX);
-    handle.setPointerCapture(e.pointerId);
+  trackWrap.addEventListener('pointerdown',e=>{
+    if(e.target===thumb)return;
+    applyAndRedistribute(clientXToAlloc(e.clientX));
+    thumb.setPointerCapture(e.pointerId);
     e.preventDefault();
   });
-  bar.addEventListener('pointermove',e=>{
-    if(!handle.hasPointerCapture(e.pointerId))return;
-    apply(e.clientX);
+  trackWrap.addEventListener('pointermove',e=>{
+    if(!thumb.hasPointerCapture(e.pointerId))return;
+    applyAndRedistribute(clientXToAlloc(e.clientX));
   });
-  bar.addEventListener('pointerup',e=>{
-    handle.releasePointerCapture(e.pointerId);
+  trackWrap.addEventListener('pointerup',e=>{
+    thumb.releasePointerCapture(e.pointerId);
   });
+}
+
+function onBudgetInput(v){
+  const newBudget=Math.max(0,parseFloat(v)||0);
+  const totalMin=data.cards.reduce((s,c)=>s+c.minPayment,0);
+  allocBudget=newBudget;
+  if(newBudget<totalMin){allocs=data.cards.map(c=>c.minPayment);}
+  else{clampAllocs();}
+  renderAllocator();
+}
+
+function setMinsOnly(){
+  const totalMin=data.cards.reduce((s,c)=>s+c.minPayment,0);
+  allocBudget=totalMin;
+  document.querySelector('.alloc-budget-input').value=totalMin;
+  allocs=data.cards.map(c=>c.minPayment);
+  renderAllocator();
+}
+
+function resetEqual(){
+  const totalMin=data.cards.reduce((s,c)=>s+c.minPayment,0);
+  const ex=Math.max(0,allocBudget-totalMin);
+  const perCard=Math.floor(ex/data.cards.length);
+  allocs=data.cards.map(c=>c.minPayment+perCard);
+  const leftover=allocBudget-allocs.reduce((s,a)=>s+a,0);
+  if(leftover>0)allocs[0]+=leftover;
+  renderAllocator();
 }
 
 /* ── Payoff ── */
@@ -513,17 +555,11 @@ function renderPayoff(){
   const yrs=Math.floor(res.months/12),mos=res.months%12;
   const yrsMin=Math.floor(resMin.months/12),mosMin=resMin.months%12;
   const saved=resMin.totalInt-res.totalInt,monthsSaved=resMin.months-res.months;
-
   document.getElementById('headline-grid').innerHTML=`
     <div class="hl-card"><div class="hl-label">Debt free</div><div class="hl-val good">${yrs>0?yrs+'y ':''} ${mos}m</div><div class="hl-sub">${monthsSaved>0?monthsSaved+' months sooner':'at minimum payments'}</div></div>
     <div class="hl-card"><div class="hl-label">Total interest</div><div class="hl-val bad">${fmt(res.totalInt)}</div><div class="hl-sub">${saved>0?'saving '+fmt(saved):''}</div></div>
     <div class="hl-card"><div class="hl-label">Monthly outgoing</div><div class="hl-val warn">${fmt(res.budget)}</div><div class="hl-sub">${fmt(res.totalMin)} mins + £${extra} extra</div></div>`;
-
-  const COLS=[
-    {color:'#c0392b',fill:'#fce8e8',text:'#a32d2d'},
-    {color:'#b8860b',fill:'#faeeda',text:'#854f0b'},
-    {color:'#1a7a4a',fill:'#eaf3de',text:'#3b6d11'},
-  ];
+  const COLS=[{color:'#c0392b',fill:'#fce8e8',text:'#a32d2d'},{color:'#b8860b',fill:'#faeeda',text:'#854f0b'},{color:'#1a7a4a',fill:'#eaf3de',text:'#3b6d11'}];
   let html='';
   res.phases.forEach((phase,i)=>{
     const c=phase.card,col=COLS[i]||COLS[2];
@@ -536,8 +572,7 @@ function renderPayoff(){
     const nextCard=!isLast?res.phases[i+1].card:null;
     const extraLine=extra>0?`Extra <strong>£${extra}/month</strong> fires at <strong>${c.name} (${c.apr}% APR)</strong> — your highest-rate debt`:`No extra payment this phase — minimums only`;
     const freedLine=!isLast?`When cleared, its <strong>£${fmt(c.minPayment)}/month</strong> minimum rolls into <strong>${nextCard.name}</strong> for phase ${i+2}`:`Final phase — freed minimums plus your extra all combine to finish it`;
-    html+=`<div class="phase">
-      <div class="phase-accent" style="background:${col.color}"></div>
+    html+=`<div class="phase"><div class="phase-accent" style="background:${col.color}"></div>
       <div class="phase-head">
         <div style="display:flex;align-items:flex-start">
           <span class="phase-step" style="background:${col.fill};color:${col.text}">${i+1}</span>
